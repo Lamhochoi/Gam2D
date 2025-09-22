@@ -3,5 +3,6 @@
     <!-- Thêm 2 cái này -->
     <string name="btn_music_desc">Music button</string>
     <string name="btn_sound_desc">Sound button</string>
+    <string name="btn_pause_desc">Pause button</string>
 
 </resources>

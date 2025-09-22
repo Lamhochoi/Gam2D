@@ -28,7 +28,17 @@ class CollisionManager(private val gameView: GameView) {
                     e.hp--
                     if (e.hp <= 0) {
                         deadEnemies.add(e)
-                        entityManager.increaseEnemiesKilled()
+                        if (e.isBoss) {
+                            // Boss chết → để EntityManager/GameView xử lý WIN
+                            e.active = false
+                            if (gameView.gameState == GameView.GameState.RUNNING) {
+                                gameView.gameState = GameView.GameState.WIN
+                            }
+                        } else {
+                            // Enemy thường chết → tăng kill ngay lập tức
+                            entityManager.increaseEnemiesKilled()
+                            e.active = false
+                        }
                     }
                     hit = true
                 }

@@ -9,6 +9,7 @@ import com.example.game2d.core.GameView
 import com.example.game2d.entities.*
 import android.content.Context
 import android.graphics.BitmapFactory.Options
+import android.util.Log
 
 class EntityManager(private val gameView: GameView) {
     var goal: Int = 0 // default, có thể override bởi DifficultyManager
@@ -219,6 +220,10 @@ class EntityManager(private val gameView: GameView) {
 
     fun update(deltaTime: Float) {
         if (!resourcesInitialized) return
+        if (gameView.gameState == GameView.GameState.WIN ||
+            gameView.gameState == GameView.GameState.GAME_OVER) {
+            return
+        }
 
         val screenH = gameView.screenH
         val screenW = gameView.screenW
@@ -229,10 +234,13 @@ class EntityManager(private val gameView: GameView) {
         if (bgY1 >= screenH) bgY1 = bgY2 - screenH
         if (bgY2 >= screenH) bgY2 = bgY1 - screenH
 
-        // Player die check
-        if (gameView.player.hp <= 0) {
+        // Player die check — chỉ set GAME_OVER khi đang RUNNING
+        if (gameView.gameState == GameView.GameState.RUNNING && gameView.player.hp <= 0) {
+            Log.d("EntityManager", "Player HP <= 0 -> GAME_OVER")
             gameView.gameState = GameView.GameState.GAME_OVER
+            // không return ở đây; update() sẽ sớm early-return vì guard ở đầu hàm
         }
+
 
         val now = System.currentTimeMillis()
 
@@ -318,21 +326,37 @@ class EntityManager(private val gameView: GameView) {
             bullet.y > screenH + bullet.size || bullet.x < -bullet.size || bullet.x > screenW + bullet.size
         }
 
+        var bossJustDefeated = false
+
         activeEnemies.removeAll { enemy ->
             if (enemy.hp <= 0) {
-                // 🔊 Âm thanh trúng hạ enemy/boss
                 SoundManager.playHit()
                 if (enemy.isBoss) {
-                    gameView.gameState = GameView.GameState.WIN
-                }else {
-                    increaseEnemiesKilled() // ✅ tăng kill count
+                    Log.d("EntityManager", "Boss HP <= 0 detected (inside removeAll)")
+                    bossJustDefeated = true
+                    enemy.active = false
+                    true
+                } else {
+                    increaseEnemiesKilled()
+                    enemy.active = false
+                    true
                 }
-                enemy.active = false
-                true
             } else {
                 false
             }
         }
+
+// Sau removeAll: chỉ set WIN khi đang RUNNING (tránh ghi đè)
+        if (bossJustDefeated && gameView.gameState == GameView.GameState.RUNNING) {
+            Log.d("EntityManager", "Boss defeated -> setting WIN")
+            gameView.gameState = GameView.GameState.WIN
+            // Không gọi gameView.pause() hay stopLoop() ở đây — render phải tiếp tục để vẽ overlay
+            // Ngoài ra có thể tắt nhạc hoặc phát hiệu ứng chiến thắng:
+            // MusicManager.pause()
+        }
+
+
+
 
         // ✅ Spawn FallingObject ngẫu nhiên
         if ((0..1000).random() < 3) {

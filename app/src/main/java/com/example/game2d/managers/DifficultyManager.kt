@@ -23,10 +23,10 @@ object DifficultyManager {
 
         when (level) {
             "MARS" -> {
-                player.hp = 20; player.maxHp = 20
+                player.hp = 100; player.maxHp = 100
                 EnemyDefaults.speed = 1; EnemyDefaults.shotDelay = 2000; EnemyDefaults.hp = 2
                 BossDefaults.hp = 20; BossDefaults.speed = 1; BossDefaults.shotDelay = 1500
-                entityManager.goal = 10
+                entityManager.goal = 1
             }
             "MERCURY" -> {
                 player.hp = 20; player.maxHp = 20

@@ -18,6 +18,8 @@ class GameActivity : AppCompatActivity() {
     private lateinit var gameView: GameView
     private lateinit var btnMusic: ImageButton
     private lateinit var btnSound: ImageButton
+    private lateinit var btnPause: ImageButton
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +59,11 @@ class GameActivity : AppCompatActivity() {
             Log.e("GameActivity", "btnSound not found")
             return
         }
+        btnPause = findViewById<ImageButton>(R.id.btnPause) ?: run {
+            Log.e("GameActivity", "btnPause not found")
+            return
+        }
+
 
         MusicManager.init(this)
         MusicManager.setMusicEnabled(true)
@@ -78,6 +85,18 @@ class GameActivity : AppCompatActivity() {
                 if (enabled) R.drawable.ic_sound_on else R.drawable.ic_sound_off
             )
         }
+        btnPause.setOnClickListener {
+            if (gameView.gameState == GameView.GameState.RUNNING) {
+                gameView.pause()
+                gameView.gameState = GameView.GameState.PAUSED
+                btnPause.setImageResource(R.drawable.ic_play) // icon "play"
+            } else if (gameView.gameState == GameView.GameState.PAUSED) {
+                gameView.resume()
+                gameView.gameState = GameView.GameState.RUNNING
+                btnPause.setImageResource(R.drawable.ic_pause) // icon "pause"
+            }
+        }
+
     }
 
     override fun onPause() {

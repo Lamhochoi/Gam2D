@@ -16,6 +16,7 @@ import com.example.game2d.graphics.Renderer
 import android.os.Vibrator
 import android.os.VibrationEffect
 import android.util.AttributeSet
+import android.util.Log
 import com.example.game2d.managers.MusicManager
 import com.example.game2d.managers.SoundManager
 import com.example.game2d.managers.DifficultyManager
@@ -26,7 +27,8 @@ open class GameView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : SurfaceView(context, attrs, defStyleAttr), SurfaceHolder.Callback {
 
-    enum class GameState { RUNNING, GAME_OVER, WIN }
+    enum class GameState { RUNNING, GAME_OVER, WIN, PAUSED }
+
     var lastHitTime: Long = 0L
 
     companion object {
@@ -64,7 +66,8 @@ open class GameView @JvmOverloads constructor(
 
     private val skullBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.ic_skull) }
     private val trophyBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.ic_trophy) }
-
+    private val pauseBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.ic_pause_bg) }
+    private var scaledPause: Bitmap? = null
     private var scaledSkull: Bitmap? = null
     private var scaledTrophy: Bitmap? = null
 
@@ -85,6 +88,7 @@ open class GameView @JvmOverloads constructor(
         val iconSize = (screenW * 0.6f).toInt()
         scaledSkull = Bitmap.createScaledBitmap(skullBitmap, iconSize, iconSize, true)
         scaledTrophy = Bitmap.createScaledBitmap(trophyBitmap, iconSize, iconSize, true)
+        scaledPause = Bitmap.createScaledBitmap(pauseBitmap, iconSize, iconSize, true)
 
         val btnWidth = screenW * 0.5f
         val btnHeight = 150f
@@ -122,7 +126,21 @@ open class GameView @JvmOverloads constructor(
             GameState.GAME_OVER, GameState.WIN -> {
                 if (event.action == MotionEvent.ACTION_DOWN) {
                     btnRestartRect?.let {
-                        if (it.contains(event.x, event.y)) onRestart?.invoke() // Changed from restartGame()
+                        if (it.contains(event.x, event.y)) onRestart?.invoke()
+                    }
+                    btnMenuRect?.let {
+                        if (it.contains(event.x, event.y)) onBackToMenu?.invoke()
+                    }
+                }
+                true
+            }
+            GameState.PAUSED -> {
+                if (event.action == MotionEvent.ACTION_DOWN) {
+                    btnRestartRect?.let {
+                        if (it.contains(event.x, event.y)) {
+                            gameState = GameState.RUNNING
+                            resume()
+                        }
                     }
                     btnMenuRect?.let {
                         if (it.contains(event.x, event.y)) onBackToMenu?.invoke()
@@ -133,6 +151,7 @@ open class GameView @JvmOverloads constructor(
             else -> entityManager.handleTouch(event)
         }
     }
+
 
 
     fun update(deltaTime: Float) {
@@ -160,21 +179,25 @@ open class GameView @JvmOverloads constructor(
         player.hp -= damage
         lastHitTime = System.currentTimeMillis()
         vibrate(120)
-        if (player.hp <= 0) {
+        if (player.hp <= 0 && gameState == GameState.RUNNING) {
+            Log.d("GameView", "Player died -> GAME_OVER")
             gameState = GameState.GAME_OVER
         }
     }
 
+
     fun render(canvas: Canvas) {
+        Log.v("GameView", "render(): state=$gameState")
         renderer.draw(canvas)
         if (System.currentTimeMillis() - lastHitTime < 150) {
             val flashPaint = Paint().apply { color = Color.argb(80, 255, 0, 0) }
             canvas.drawRect(0f, 0f, screenW.toFloat(), screenH.toFloat(), flashPaint)
         }
-        if (gameState == GameState.GAME_OVER) {
-            drawOverlay(canvas, "Thất Bại!")
-        } else if (gameState == GameState.WIN) {
-            drawOverlay(canvas, "Chiến Thắng!")
+        when (gameState) {
+            GameState.GAME_OVER -> drawOverlay(canvas, "Thất Bại!")
+            GameState.WIN -> drawOverlay(canvas, "Chiến Thắng!")
+            GameState.PAUSED -> drawOverlay(canvas, "Tạm dừng")
+            else -> {}
         }
     }
 
@@ -222,11 +245,31 @@ open class GameView @JvmOverloads constructor(
         canvas.drawRoundRect(bannerRect, 40f, 40f, borderPaint)
 
         // --- Icon ---
-        (if (gameState == GameState.WIN) scaledTrophy else scaledSkull)?.let {
-            val iconX = screenW / 2f - it.width / 2
-            val iconY = bannerRect.top - it.height
-            canvas.drawBitmap(it, iconX, iconY, null)
+        when (gameState) {
+            GameState.WIN -> scaledTrophy?.let {
+                val offsetY = 100f   // khoảng cách từ top màn hình xuống
+                val iconX = screenW / 2f - it.width / 2
+                val iconY = offsetY
+                canvas.drawBitmap(it, iconX, iconY, null)
+            }
+
+            GameState.GAME_OVER -> scaledSkull?.let {
+                val offsetY = 100f   // chỉnh ở đây nếu muốn icon cao/thấp hơn
+                val iconX = screenW / 2f - it.width / 2
+                val iconY = offsetY
+                canvas.drawBitmap(it, iconX, iconY, null)
+            }
+
+            GameState.PAUSED -> scaledPause?.let { bmp ->
+                val offsetY = 150f   // chỉnh ở đây riêng cho pause
+                val left = screenW / 2f - bmp.width / 2
+                val top = offsetY
+                canvas.drawBitmap(bmp, left, top, null)
+            }
+
+            else -> {}
         }
+
 
         // --- Title ---
         val scale = 1f + 0.05f * kotlin.math.sin(elapsed * 2)
@@ -270,8 +313,14 @@ open class GameView @JvmOverloads constructor(
             canvas.drawText(text, rect.centerX(), textY, buttonTextPaint)
         }
 
-        btnRestartRect?.let { drawButton(it, "▶ Chơi lại") }
-        btnMenuRect?.let { drawButton(it, "☰ Menu") }
+        // --- Button tùy theo state ---
+        if (gameState == GameState.GAME_OVER || gameState == GameState.WIN) {
+            btnRestartRect?.let { drawButton(it, "▶ Chơi lại") }
+            btnMenuRect?.let { drawButton(it, "☰ Menu") }
+        } else if (gameState == GameState.PAUSED) {
+            btnRestartRect?.let { drawButton(it, "▶ Tiếp tục") }
+            btnMenuRect?.let { drawButton(it, "☰ Menu") }
+        }
     }
 
     fun pause() {
