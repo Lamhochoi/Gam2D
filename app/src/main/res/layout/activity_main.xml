@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@drawable/main">
+
+    <!-- Thanh trạng thái trên cùng -->
+    <LinearLayout
+        android:id="@+id/statusBar"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/status_bar_bg"
+        android:padding="10dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginHorizontal="20dp"
+        android:elevation="12dp">
+
+        <!-- Energy -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/chip_energy"
+            android:paddingHorizontal="12dp"
+            android:layout_marginEnd="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/energy" />
+
+            <TextView
+                android:id="@+id/tvEnergy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="30/30"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginStart="6dp"/>
+
+            <!-- Dấu cộng -->
+            <ImageView
+                android:id="@+id/btnAddEnergy"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_add"
+                app:tint="@android:color/white"/>
+        </LinearLayout>
+
+        <!-- Coin -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/chip_coin"
+            android:paddingHorizontal="12dp"
+            android:layout_marginEnd="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/coin" />
+
+            <TextView
+                android:id="@+id/tvCoin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="100"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginStart="6dp"/>
+
+            <!-- Dấu cộng -->
+            <ImageView
+                android:id="@+id/btnAddCoin"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_add"
+                app:tint="@android:color/white"/>
+        </LinearLayout>
+
+        <!-- Gem -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/chip_gem"
+            android:paddingHorizontal="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/gem" />
+
+            <TextView
+                android:id="@+id/tvGem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginStart="6dp"/>
+
+            <!-- Dấu cộng -->
+            <ImageView
+                android:id="@+id/btnAddGem"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_add"
+                app:tint="@android:color/white"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Tiêu đề Game -->
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Chọn Thử Thách"
+        android:textSize="40sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/robotomono_bold"
+        android:textColor="@android:color/white"
+        android:shadowColor="#AA00FF"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="15"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="80dp"
+        android:layout_below="@id/statusBar"/>
+
+    <!-- Menu nút chọn độ khó -->
+    <LinearLayout
+        android:id="@+id/menuContainer"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tvTitle"
+        android:layout_marginTop="100dp">
+
+        <Button
+            android:id="@+id/btnEasy"
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:text="SAO HỎA"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/robotomono_bold"
+            android:textColor="@android:color/white"
+            android:background="@drawable/btn_easy_bg"
+            android:layout_margin="16dp"
+            android:elevation="8dp"/>
+
+        <Button
+            android:id="@+id/btnMedium"
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:text="SAO THỦY"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/robotomono_bold"
+            android:textColor="@android:color/white"
+            android:background="@drawable/btn_medium_bg"
+            android:layout_margin="16dp"
+            android:elevation="8dp"/>
+
+        <Button
+            android:id="@+id/btnHard"
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:text="SAO THỔ"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/robotomono_bold"
+            android:textColor="@android:color/white"
+            android:background="@drawable/btn_hard_bg"
+            android:layout_margin="16dp"
+            android:elevation="8dp"/>
+    </LinearLayout>
+
+</RelativeLayout>

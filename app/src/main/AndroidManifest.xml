@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Cho phép rung điện thoại -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Game2D"
+        tools:targetApi="31">
+
+        <!-- IntroActivity là màn hình khởi động -->
+        <activity
+            android:name=".IntroActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Game2D">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!-- Màn hình game chính -->
+        <activity
+            android:name=".MainActivity"
+            android:theme="@style/Theme.Game2D" />
+
+        <!-- Màn hình gameplay -->
+        <activity
+            android:name=".GameActivity"
+            android:theme="@style/Theme.Game2D" />
+
+    </application>
+
+</manifest>

@@ -1,0 +1,19 @@
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#FF5722"/> <!-- màu cam khi ấn -->
+            <corners android:radius="50dp"/>
+            <stroke android:width="4dp" android:color="#FFFFFF"/>
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#FF9800"
+                android:endColor="#F57C00"
+                android:angle="270"/>
+            <corners android:radius="50dp"/>
+            <stroke android:width="4dp" android:color="#FFFFFF"/>
+        </shape>
+    </item>
+</selector>

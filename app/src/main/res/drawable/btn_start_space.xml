@@ -1,0 +1,25 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Vòng ngoài phát sáng -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#5500BFFF"/> <!-- ánh sáng xanh tím mờ -->
+            <size android:width="150dp" android:height="150dp"/>
+        </shape>
+    </item>
+
+    <!-- Nút chính -->
+    <item android:inset="8dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="90dp"
+                android:startColor="#3A00D9"
+                android:endColor="#000000"/>
+            <stroke
+                android:width="4dp"
+                android:color="#80FFFFFF" />
+            <size android:width="130dp" android:height="130dp"/>
+        </shape>
+    </item>
+</layer-list>

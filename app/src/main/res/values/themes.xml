@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Dùng AppCompat thay vì Material gốc -->
+    <style name="Theme.Game2D" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Nếu muốn toàn màn hình thì thêm -->
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
+</resources>
