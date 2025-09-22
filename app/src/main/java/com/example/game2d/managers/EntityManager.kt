@@ -102,8 +102,7 @@ class EntityManager(private val gameView: GameView) {
         bossBitmap = BitmapFactory.decodeResource(res, R.drawable.boss_end)
         bulletBitmap = BitmapFactory.decodeResource(res, R.drawable.bullet3)
         fallingBitmap = BitmapFactory.decodeResource(res, R.drawable.rock)
-
-        // Player
+        //Player
         val playerSize = (screenW * 0.14f * GameView.SCALE_FACTOR).toInt()
         gameView.player.size = playerSize
         cachedPlayerBitmap = Bitmap.createScaledBitmap(playerBitmap!!, playerSize, playerSize, false)
@@ -485,18 +484,20 @@ class EntityManager(private val gameView: GameView) {
                 if (isDraggingPlayer) {
                     var newX = event.x - gameView.player.size / 2
                     var newY = event.y - gameView.player.size / 2
+
                     if (newX < 0) {
                         newX = 0f
-                        SoundManager.playEnemyBounce()// 🔊 Player chạm trái
+                        SoundManager.playEnemyBounce()
                     }
                     if (newY < 0) {
                         newY = 0f
                         SoundManager.playEnemyBounce()
                     }
-                    if (newX > gameView.screenW - gameView.player.size){
+                    if (newX > gameView.screenW - gameView.player.size) {
                         newX = (gameView.screenW - gameView.player.size).toFloat()
                         SoundManager.playEnemyBounce()
                     }
+
                     if (newY > gameView.screenH - gameView.player.size) {
                         newY = (gameView.screenH - gameView.player.size).toFloat()
                         SoundManager.playEnemyBounce()
@@ -504,6 +505,7 @@ class EntityManager(private val gameView: GameView) {
                     gameView.player.x = newX
                     gameView.player.y = newY
                 }
+
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 isDraggingPlayer = false

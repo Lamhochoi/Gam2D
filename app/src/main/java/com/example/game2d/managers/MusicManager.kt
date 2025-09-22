@@ -8,7 +8,7 @@ object MusicManager {
     private var bgPlayer: MediaPlayer? = null
     private var musicEnabled = true
     private var initialized = false
-    private var volume = 0.2f  // Mặc định 50%
+    private var volume = 0.3f  // Mặc định 50%
 
     fun setVolume(v: Float) {
         volume = v.coerceIn(0f, 1f) // Giới hạn 0-1
