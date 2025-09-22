@@ -38,8 +38,8 @@ class GameActivity : AppCompatActivity() {
             finish()
             return
         }
-        root.removeAllViews()
-        root.addView(gameView)
+        // Không xóa hết view gốc nữa, chỉ add gameView vào dưới cùng
+        root.addView(gameView, 0)
 
         gameView.onRestart = { runOnUiThread { recreate() } }
         gameView.onBackToMenu = {

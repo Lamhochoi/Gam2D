@@ -3,19 +3,32 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- GameView sẽ được add động trong GameActivity -->
+
+    <!-- Nút nhạc nền (trái, giữa màn hình) -->
     <ImageButton
         android:id="@+id/btnMusic"
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:layout_gravity="center_vertical|start"
+        android:layout_marginStart="16dp"
         android:background="@android:color/transparent"
-        android:src="@drawable/ic_music_on" />
+        android:src="@drawable/ic_music_on"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/btn_music_desc"/>
 
+    <!-- Nút hiệu ứng âm thanh (phải, giữa màn hình) -->
     <ImageButton
         android:id="@+id/btnSound"
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:layout_gravity="center_vertical|end"
+        android:layout_marginEnd="16dp"
         android:background="@android:color/transparent"
-        android:src="@drawable/ic_sound_on" />
+        android:src="@drawable/ic_sound_on"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/btn_sound_desc"/>
+
 </FrameLayout>

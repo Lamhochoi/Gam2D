@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Game2D</string>
     <!-- Thêm 2 cái này -->
-    <string name="music">Music</string>
-    <string name="sound">Sound</string>
+    <string name="btn_music_desc">Music button</string>
+    <string name="btn_sound_desc">Sound button</string>
+
 </resources>
