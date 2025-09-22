@@ -25,6 +25,11 @@ class EntityManager(private val gameView: GameView) {
     val activeEnemies = mutableListOf<Enemy>()
     private val bossPool = mutableListOf<Enemy>()
 
+    // Vụ Nổ
+    private val explosionPool = mutableListOf<Explosion>()
+    val activeExplosions = mutableListOf<Explosion>()
+    private var explosionFrames: List<Bitmap>? = null
+
     // ✅ Bổ sung FallingObject
     private val fallingObjectPool = mutableListOf<FallingObject>()
     val activeFallingObjects = mutableListOf<FallingObject>()
@@ -79,9 +84,22 @@ class EntityManager(private val gameView: GameView) {
     //Khởi tạo các tài nguyên
     fun initResources(screenW: Int, screenH: Int) {
         val res = gameView.resources
+        // Explosion frames
+        val explosionSheet = BitmapFactory.decodeResource(res, R.drawable.explosion)
+        val frameCount = 6 // số frame trong ảnh explosion.png
+        val frameW = explosionSheet.width / frameCount
+        val frameH = explosionSheet.height
+
+        explosionFrames = (0 until frameCount).map { i ->
+            Bitmap.createBitmap(explosionSheet, i * frameW, 0, frameW, frameH)
+        }
+
+        initExplosionPool(20) // tạo sẵn 20 vụ nổ
+
+
         playerBitmap = BitmapFactory.decodeResource(res, R.drawable.player4)
         enemyBitmap = BitmapFactory.decodeResource(res, R.drawable.enemyred)
-        bossBitmap = BitmapFactory.decodeResource(res, R.drawable.boss)
+        bossBitmap = BitmapFactory.decodeResource(res, R.drawable.boss_end)
         bulletBitmap = BitmapFactory.decodeResource(res, R.drawable.bullet3)
         fallingBitmap = BitmapFactory.decodeResource(res, R.drawable.rock)
 
@@ -117,6 +135,16 @@ class EntityManager(private val gameView: GameView) {
 
         resourcesInitialized = true
     }
+    private fun initExplosionPool(size: Int) {
+        if (explosionPool.size < size) {
+            repeat(size - explosionPool.size) {
+                explosionPool.add(Explosion(0f, 0f, active = false))
+            }
+        } else {
+            explosionPool.forEach { it.active = false }
+        }
+    }
+
 
     private fun initBulletPool(size: Int) {
         if (bulletPool.size < size) {
@@ -204,6 +232,9 @@ class EntityManager(private val gameView: GameView) {
     private fun getEnemyBulletFromPool(): Bullet? = enemyBulletPool.find { !it.active }?.also { it.active = true }
     private fun getEnemyFromPool(): Enemy? = enemyPool.find { !it.active }?.also { it.active = true }
     private fun getBossFromPool(): Enemy? = bossPool.find { !it.active }?.also { it.active = true }
+    private fun getExplosionFromPool(): Explosion? =
+        explosionPool.find { !it.active }?.also { it.active = true }
+
 
     // ✅ Spawn FallingObject
     private fun spawnFallingObject() {
@@ -217,6 +248,7 @@ class EntityManager(private val gameView: GameView) {
             activeFallingObjects.add(this)
         }
     }
+
 
     fun update(deltaTime: Float) {
         if (!resourcesInitialized) return
@@ -284,11 +316,13 @@ class EntityManager(private val gameView: GameView) {
                     // 🔊 Âm thanh nảy khi chạm rìa
                     SoundManager.playEnemyBounce()
                 }
+                val maxY = (screenH * 0.66f).toInt() // enemy và boss chỉ ở nửa trên
+
                 if (e.y < 0) {
                     e.y = 0f
                     e.speed = -e.speed
-                } else if (e.y + e.size > screenH) {
-                    e.y = (screenH - e.size).toFloat()
+                } else if (e.y + e.size > maxY) {
+                    e.y = (maxY - e.size).toFloat()
                     e.speed = -e.speed
                 }
 
@@ -330,7 +364,12 @@ class EntityManager(private val gameView: GameView) {
 
         activeEnemies.removeAll { enemy ->
             if (enemy.hp <= 0) {
-                SoundManager.playHit()
+                // 🔥 Spawn Explosion tại vị trí enemy chết
+                spawnExplosion(
+                    enemy.x + enemy.size / 2f,
+                    enemy.y + enemy.size / 2f,
+                    enemy.size
+                )
                 if (enemy.isBoss) {
                     Log.d("EntityManager", "Boss HP <= 0 detected (inside removeAll)")
                     bossJustDefeated = true
@@ -376,6 +415,15 @@ class EntityManager(private val gameView: GameView) {
                 true // Xóa objects không active
             }
         }
+        // ✅ Update Explosions
+        activeExplosions.removeAll { exp ->
+            if (exp.active) {
+                exp.update(deltaTime)
+                false // vẫn còn active, giữ lại
+            } else {
+                true  // inactive thì remove
+            }
+        }
     }
 
     private fun spawnEnemy() {
@@ -407,6 +455,18 @@ class EntityManager(private val gameView: GameView) {
             bossSpawned = true
         }
     }
+    fun spawnExplosion(x: Float, y: Float, size: Int) {
+        SoundManager.playExplosion()
+        getExplosionFromPool()?.let { exp ->
+            exp.x = x
+            exp.y = y
+            exp.setFrames(explosionFrames!!, size.toFloat()) // ✅ Truyền frames gốc + size
+            activeExplosions.add(exp)
+        }
+    }
+
+
+
 
     fun handleTouch(event: MotionEvent): Boolean {
         when (event.action) {
@@ -418,7 +478,7 @@ class EntityManager(private val gameView: GameView) {
                 )
                 if (rect.contains(event.x, event.y)) {
                     isDraggingPlayer = true
-                    SoundManager.playPlayerThruster() // 🚀 bắt đầu engine
+                    //SoundManager.playPlayerThruster() // 🚀 bắt đầu engine
                 }
             }
             MotionEvent.ACTION_MOVE -> {
@@ -447,7 +507,7 @@ class EntityManager(private val gameView: GameView) {
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 isDraggingPlayer = false
-                SoundManager.stopPlayerThruster() // 🚀 tắt engine
+                //SoundManager.stopPlayerThruster() // 🚀 tắt engine
             }
         }
         return true
@@ -480,6 +540,9 @@ class EntityManager(private val gameView: GameView) {
         activeEnemies.clear()
         // ✅ Reset FallingObject
         activeFallingObjects.clear()
+
+        activeExplosions.clear()
+        explosionPool.forEach { it.active = false }
 
         bulletPool.forEach { it.active = false }
         enemyBulletPool.forEach { it.active = false }

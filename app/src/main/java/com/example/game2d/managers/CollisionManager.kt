@@ -38,6 +38,8 @@ class CollisionManager(private val gameView: GameView) {
                             // Enemy thường chết → tăng kill ngay lập tức
                             entityManager.increaseEnemiesKilled()
                             e.active = false
+                            // GỌI NỔ
+                            entityManager.spawnExplosion(e.x + e.size/2f, e.y + e.size/2f, e.size)
                         }
                     }
                     hit = true

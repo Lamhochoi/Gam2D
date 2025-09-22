@@ -31,6 +31,8 @@ object SoundManager {
         soundMap["enemy_bounce"] = soundPool!!.load(context, R.raw.blip, 1)
         soundMap["hit"]          = soundPool!!.load(context, R.raw.hit, 1)
         soundMap["falling_hit"]  = soundPool!!.load(context, R.raw.fireball, 1)
+        soundMap["explosion"] = soundPool!!.load(context, R.raw.bomb, 1)
+
 
         // 🔊 Âm thanh động cơ phi thuyền (loop)
         soundMap["player_thruster"] = soundPool!!.load(context, R.raw.player_thruster, 1)
@@ -49,6 +51,8 @@ object SoundManager {
     fun playEnemyBounce() = play("enemy_bounce")
     fun playHit() = play("hit")
     fun playFallingHit() = play("falling_hit")
+    fun playExplosion() = play("explosion")
+
 
     // 🚀 Phi thuyền động cơ
     fun playPlayerThruster() {

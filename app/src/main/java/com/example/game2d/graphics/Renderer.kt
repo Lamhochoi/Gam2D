@@ -35,12 +35,20 @@ class Renderer(private val gameView: GameView) {
         drawBackground(canvas)
         drawPlayer(canvas)
         drawEnemies(canvas)
+        drawExplosions(canvas)   // ⬅️ chuyển lên ngay sau enemy
         drawBullets(canvas)
         drawFallingObjects(canvas)   // ⬅️ đã gom vào EntityManager
         drawUI(canvas)
         drawBossHp(canvas)
         drawFPS(canvas)
         drawScore(canvas)
+    }
+    // Vẽ Explosion
+    private fun drawExplosions(canvas: Canvas) {
+        val manager = gameView.entityManager
+        manager.activeExplosions.forEach { exp ->
+            exp.draw(canvas)  // Explosion đã có sẵn hàm draw(canvas)
+        }
     }
 
     private fun drawBackground(canvas: Canvas) {
