@@ -361,6 +361,7 @@ class EntityManager(private val gameView: GameView) {
         // ✅ Spawn FallingObject ngẫu nhiên
         if ((0..1000).random() < 3) {
             spawnFallingObject()
+            SoundManager.playFallingHit()
         }
 
         // ✅ Update FallingObject với việc xoá khỏi pool khi inactive
@@ -417,6 +418,7 @@ class EntityManager(private val gameView: GameView) {
                 )
                 if (rect.contains(event.x, event.y)) {
                     isDraggingPlayer = true
+                    SoundManager.playPlayerThruster() // 🚀 bắt đầu engine
                 }
             }
             MotionEvent.ACTION_MOVE -> {
@@ -445,6 +447,7 @@ class EntityManager(private val gameView: GameView) {
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 isDraggingPlayer = false
+                SoundManager.stopPlayerThruster() // 🚀 tắt engine
             }
         }
         return true

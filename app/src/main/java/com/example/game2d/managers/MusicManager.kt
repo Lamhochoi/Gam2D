@@ -8,12 +8,20 @@ object MusicManager {
     private var bgPlayer: MediaPlayer? = null
     private var musicEnabled = true
     private var initialized = false
+    private var volume = 0.2f  // Mặc định 50%
+
+    fun setVolume(v: Float) {
+        volume = v.coerceIn(0f, 1f) // Giới hạn 0-1
+        bgPlayer?.setVolume(volume, volume)
+    }
+
+    fun getVolume(): Float = volume
 
     fun init(context: Context) {
         if (!initialized) {
-            bgPlayer = MediaPlayer.create(context, R.raw.bg_music)?.apply {
+            bgPlayer = MediaPlayer.create(context, R.raw.bg_music1)?.apply {
                 isLooping = true
-                setVolume(0.5f, 0.5f)
+                setVolume(volume, volume)
             }
             initialized = true
         }
@@ -39,7 +47,7 @@ object MusicManager {
         try {
             if (bgPlayer == null) {
                 // nếu bị release thì tạo lại
-                bgPlayer = MediaPlayer.create(context, R.raw.bg_music)?.apply {
+                bgPlayer = MediaPlayer.create(context, R.raw.bg_music1)?.apply {
                     isLooping = true
                     setVolume(0.5f, 0.5f)
                 }

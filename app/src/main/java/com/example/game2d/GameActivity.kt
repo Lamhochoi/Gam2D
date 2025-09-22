@@ -80,11 +80,26 @@ class GameActivity : AppCompatActivity() {
 
         btnSound.setOnClickListener {
             val enabled = !SoundManager.isSoundEnabled()
+            // Bật/tắt cả hai
             SoundManager.setSoundEnabled(enabled)
+            MusicManager.setMusicEnabled(enabled)
+
+            if (enabled) {
+                MusicManager.start(this)
+            } else {
+                MusicManager.pause()
+            }
+
+            // Cập nhật cả 2 icon
             btnSound.setImageResource(
                 if (enabled) R.drawable.ic_sound_on else R.drawable.ic_sound_off
             )
+            btnMusic.setImageResource(
+                if (enabled) R.drawable.ic_music_on else R.drawable.ic_music_off
+            )
         }
+
+
         btnPause.setOnClickListener {
             if (gameView.gameState == GameView.GameState.RUNNING) {
                 gameView.pause()
