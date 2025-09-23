@@ -22,7 +22,7 @@ class Explosion(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     // thời lượng từng frame (giây)
-    private val frameDurations = listOf(0.15f, 0.15f, 0.12f, 0.1f, 0.1f, 0.25f)
+    private val frameDurations = listOf(0.15f, 0.15f, 0.12f, 0.1f, 0.15f, 0.3f)
 
     fun setFrames(frames: List<Bitmap>, size: Float) {
         this.frames = frames

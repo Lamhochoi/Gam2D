@@ -6,6 +6,8 @@ import android.graphics.Paint
 import android.graphics.RectF
 import com.example.game2d.core.GameView
 import com.example.game2d.entities.FallingObject
+import android.graphics.Typeface
+import android.graphics.Rect
 
 class Renderer(private val gameView: GameView) {
 
@@ -90,45 +92,198 @@ class Renderer(private val gameView: GameView) {
         }
     }
 
-    private val hpBackPaint = Paint().apply { color = Color.DKGRAY }
 
     private fun drawUI(canvas: Canvas) {
-        val hpBarHeight = 30f
-        val maxWidth = gameView.screenW.toFloat()
+        val marginTop = 20f        // cách top một khoảng
+        val marginSide = 40f       // cách 2 bên một chút
+        val hpBarHeight = 35f
+        val maxWidth = gameView.screenW.toFloat() - 2 * marginSide
 
-        // Background
-        rectReusable.set(0f, 0f, maxWidth, hpBarHeight)
-        canvas.drawRect(rectReusable, hpBackPaint)
+        val left = marginSide
+        val top = marginTop
+        val right = left + maxWidth
+        val bottom = top + hpBarHeight
 
-        // Current HP
-        val hpWidth = maxWidth * (gameView.player.hp.toFloat() / gameView.player.maxHp)
-        rectReusable.set(0f, 0f, hpWidth, hpBarHeight)
-        canvas.drawRect(rectReusable, playerHpPaint)
-    }
+        // Nền bo tròn (màu xám tối)
+        val bgPaint = Paint().apply {
+            color = Color.argb(180, 50, 50, 50)
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+        canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, bgPaint)
 
-    // Vẽ Boss HP riêng
-    private fun drawBossHp(canvas: Canvas) {
-        val boss = gameView.entityManager.activeEnemies.find { it.isBoss && it.active }
-        boss?.let {
-            val barHeight = 40f
-            val maxWidth = gameView.screenW.toFloat()
-            rectReusable.set(0f, 50f, maxWidth, 50f + barHeight)
-            canvas.drawRect(rectReusable, bossHpBackPaint)
+        // Viền ngoài phát sáng xanh dương
+        val borderPaint = Paint().apply {
+            color = Color.CYAN
+            style = Paint.Style.STROKE
+            strokeWidth = 4f
+            isAntiAlias = true
+            setShadowLayer(12f, 0f, 0f, Color.CYAN)
+        }
+        canvas.drawRoundRect(left, top, right, bottom, 20f, 20f, borderPaint)
 
-            val hpWidth = maxWidth * (it.hp.toFloat() / it.maxHp)
-            rectReusable.set(0f, 50f, hpWidth, 50f + barHeight)
-            canvas.drawRect(rectReusable, bossHpPaint)
+        // Tính chiều rộng HP hiện tại
+        val hpPercent = gameView.player.hp.toFloat() / gameView.player.maxHp
+        val hpWidth = maxWidth * hpPercent
+
+        // Đổi màu theo % máu: xanh → vàng → đỏ
+        val hpColor = when {
+            hpPercent > 0.6f -> Color.GREEN
+            hpPercent > 0.3f -> Color.YELLOW
+            else -> Color.RED
+        }
+
+        val hpPaint = Paint().apply {
+            color = hpColor
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+
+        // Vẽ thanh máu
+        if (hpWidth > 0) {
+            canvas.drawRoundRect(left, top, left + hpWidth, bottom, 20f, 20f, hpPaint)
         }
     }
 
-    private fun drawFPS(canvas: Canvas) {
-        val fps = gameView.currentFPS
-        canvas.drawText("FPS: $fps", 50f, 100f, fpsPaint)
+
+    // Vẽ Boss HP riêng (style đẹp hơn)
+    private fun drawBossHp(canvas: Canvas) {
+        val boss = gameView.entityManager.activeEnemies.find { it.isBoss && it.active }
+        boss?.let {
+            val marginTop = 80f        // cách top để không đè lên thanh player
+            val marginSide = 40f
+            val barHeight = 40f
+            val maxWidth = gameView.screenW.toFloat() - 2 * marginSide
+
+            val left = marginSide
+            val top = marginTop
+            val right = left + maxWidth
+            val bottom = top + barHeight
+
+            // Nền xám tối
+            val bgPaint = Paint().apply {
+                color = Color.argb(200, 30, 30, 30)
+                style = Paint.Style.FILL
+                isAntiAlias = true
+            }
+            canvas.drawRoundRect(left, top, right, bottom, 25f, 25f, bgPaint)
+
+            // Viền tím phát sáng
+            val borderPaint = Paint().apply {
+                color = Color.MAGENTA
+                style = Paint.Style.STROKE
+                strokeWidth = 5f
+                isAntiAlias = true
+                setShadowLayer(15f, 0f, 0f, Color.MAGENTA)
+            }
+            canvas.drawRoundRect(left, top, right, bottom, 25f, 25f, borderPaint)
+
+            // Tính % máu
+            val hpPercent = it.hp.toFloat() / it.maxHp
+            val hpWidth = maxWidth * hpPercent
+
+            // Màu máu Boss: tím → đỏ khi gần hết
+            val hpColor = when {
+                hpPercent > 0.5f -> Color.MAGENTA
+                hpPercent > 0.2f -> Color.rgb(255, 100, 180) // hồng đậm
+                else -> Color.RED
+            }
+
+            val hpPaint = Paint().apply {
+                color = hpColor
+                style = Paint.Style.FILL
+                isAntiAlias = true
+            }
+
+            // Vẽ thanh máu Boss
+            if (hpWidth > 0) {
+                canvas.drawRoundRect(left, top, left + hpWidth, bottom, 25f, 25f, hpPaint)
+            }
+        }
     }
 
-    // Vẽ điểm số
+
+private fun drawFPS(canvas: Canvas) {
+    val fps = gameView.currentFPS
+    val text = "FPS: $fps"
+
+    val padding = 20f
+    val x = 40f
+    val y = 250f
+
+    fpsPaint.apply {
+        color = Color.GREEN
+        textSize = 50f
+        isAntiAlias = true
+        setShadowLayer(10f, 0f, 0f, Color.BLACK)
+        typeface = Typeface.MONOSPACE
+    }
+
+    // Tính kích thước text để vẽ nền
+    val bounds = Rect()
+    fpsPaint.getTextBounds(text, 0, text.length, bounds)
+
+    val bgLeft = x - padding
+    val bgTop = y + bounds.top - padding
+    val bgRight = x + bounds.width() + padding
+    val bgBottom = y + bounds.bottom + padding
+
+    val bgPaint = Paint().apply {
+        color = Color.argb(150, 20, 20, 20) // nền đen mờ
+        style = Paint.Style.FILL
+        isAntiAlias = true
+    }
+
+    // Vẽ nền bo tròn
+    canvas.drawRoundRect(
+        RectF(bgLeft, bgTop, bgRight, bgBottom),
+        20f, 20f, bgPaint
+    )
+
+    // Vẽ chữ FPS
+    canvas.drawText(text, x, y, fpsPaint)
+}
+
+    // Vẽ Score với hộp nền đẹp
     private fun drawScore(canvas: Canvas) {
         val score = gameView.entityManager.enemiesKilled
-        canvas.drawText("Score: $score", 50f, 170f, scorePaint)
+        val text = "Score: $score"
+
+        val padding = 20f
+        val x = 40f
+        val y = 320f
+
+        scorePaint.apply {
+            color = Color.YELLOW
+            textSize = 50f
+            isAntiAlias = true
+            setShadowLayer(10f, 0f, 0f, Color.BLACK)
+            typeface = Typeface.DEFAULT_BOLD
+        }
+
+        // Tính kích thước text để vẽ nền
+        val bounds = Rect()
+        scorePaint.getTextBounds(text, 0, text.length, bounds)
+
+        val bgLeft = x - padding
+        val bgTop = y + bounds.top - padding
+        val bgRight = x + bounds.width() + padding
+        val bgBottom = y + bounds.bottom + padding
+
+        val bgPaint = Paint().apply {
+            color = Color.argb(150, 30, 30, 30) // nền xám mờ
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+
+        // Vẽ nền bo tròn
+        canvas.drawRoundRect(
+            RectF(bgLeft, bgTop, bgRight, bgBottom),
+            20f, 20f, bgPaint
+        )
+
+        // Vẽ chữ Score
+        canvas.drawText(text, x, y, scorePaint)
     }
+
 }

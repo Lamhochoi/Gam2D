@@ -292,7 +292,7 @@ class EntityManager(private val gameView: GameView) {
         }
 
         // Spawn enemy
-        if (now - lastEnemySpawn > 2000) {
+        if (now - lastEnemySpawn > 1500) {
             spawnEnemy()
             lastEnemySpawn = now
         }
@@ -397,7 +397,7 @@ class EntityManager(private val gameView: GameView) {
 
 
         // ✅ Spawn FallingObject ngẫu nhiên
-        if ((0..1000).random() < 3) {
+        if ((0..1000).random() < 5) {
             spawnFallingObject()
             SoundManager.playFallingHit()
         }
