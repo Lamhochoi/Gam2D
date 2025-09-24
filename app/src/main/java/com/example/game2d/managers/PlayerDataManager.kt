@@ -13,30 +13,33 @@ object PlayerDataManager {
     private fun getPrefs(context: Context) =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
-    // ================== COIN ==================
     fun getCoins(context: Context): Int {
-        val v = getPrefs(context).getInt(KEY_COINS, 0)
-        Log.d(TAG, "getCoins() -> $v")
-        return v
+        val prefs = getPrefs(context)
+        val value = prefs.getInt(KEY_COINS, 0)
+        Log.d(TAG, "getCoins(): value=$value")
+        return value
     }
 
     fun addCoins(context: Context, amount: Int) {
         if (amount <= 0) {
-            Log.d(TAG, "addCoins() ignored (amount=$amount)")
+            Log.d(TAG, "addCoins(): ignored (amount=$amount)")
             return
         }
-        val prefs = getPrefs(context)
-        val old = prefs.getInt(KEY_COINS, 0)
-        val total = old + amount
-        val ok = prefs.edit().putInt(KEY_COINS, total).commit() // commit để chắc chắn
-        Log.d(TAG, "addCoins(): old=$old amount=$amount => total=$total commit=$ok")
+        try {
+            val prefs = getPrefs(context)
+            val old = prefs.getInt(KEY_COINS, 0)
+            val total = old + amount
+            val ok = prefs.edit().putInt(KEY_COINS, total).commit()
+            Log.d(TAG, "addCoins(): old=$old, amount=$amount, total=$total, commit=$ok")
+        } catch (e: Exception) {
+            Log.e(TAG, "addCoins failed: ${e.message}", e)
+        }
     }
 
-    // ================== ENERGY ==================
     fun getEnergy(context: Context): Int {
-        val v = getPrefs(context).getInt(KEY_ENERGY, 30)
-        Log.d(TAG, "getEnergy() -> $v")
-        return v
+        val value = getPrefs(context).getInt(KEY_ENERGY, 30)
+        Log.d(TAG, "getEnergy(): value=$value")
+        return value
     }
 
     fun setEnergy(context: Context, value: Int) {
@@ -48,19 +51,18 @@ object PlayerDataManager {
         val current = getEnergy(context)
         return if (current >= cost) {
             setEnergy(context, current - cost)
-            Log.d(TAG, "useEnergy($cost) -> success, now ${current - cost}")
+            Log.d(TAG, "useEnergy($cost): success, now ${current - cost}")
             true
         } else {
-            Log.d(TAG, "useEnergy($cost) -> failed, current=$current")
+            Log.d(TAG, "useEnergy($cost): failed, current=$current")
             false
         }
     }
 
-    // ================== GEM ==================
     fun getGems(context: Context): Int {
-        val v = getPrefs(context).getInt(KEY_GEMS, 10)
-        Log.d(TAG, "getGems() -> $v")
-        return v
+        val value = getPrefs(context).getInt(KEY_GEMS, 10)
+        Log.d(TAG, "getGems(): value=$value")
+        return value
     }
 
     fun setGems(context: Context, value: Int) {
@@ -70,19 +72,23 @@ object PlayerDataManager {
 
     fun addGems(context: Context, amount: Int) {
         if (amount <= 0) {
-            Log.d(TAG, "addGems() ignored (amount=$amount)")
+            Log.d(TAG, "addGems(): ignored (amount=$amount)")
             return
         }
         val prefs = getPrefs(context)
         val old = prefs.getInt(KEY_GEMS, 10)
         val total = old + amount
         prefs.edit().putInt(KEY_GEMS, total).apply()
-        Log.d(TAG, "addGems(): old=$old amount=$amount => total=$total")
+        Log.d(TAG, "addGems(): old=$old, amount=$amount, total=$total")
     }
 
-    // ----- Debug helper -----
     fun clearAllForDebug(context: Context) {
         getPrefs(context).edit().clear().commit()
         Log.w(TAG, "clearAllForDebug(): preferences cleared")
+    }
+
+    fun debugPrefs(context: Context) {
+        val prefs = getPrefs(context).all
+        Log.d(TAG, "debugPrefs(): $prefs")
     }
 }

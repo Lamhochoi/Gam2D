@@ -30,12 +30,7 @@ class CollisionManager(private val gameView: GameView) {
                 if (RectF.intersects(playerRect, coinRect)) {
                     coin.active = false
                     gameView.player.coins += coin.value
-
-                    // ✅ Lưu coin tổng vào SharedPreferences
-                    val prefs = gameView.context.getSharedPreferences("game_data", Context.MODE_PRIVATE)
-                    prefs.edit().putInt("total_coins", gameView.player.coins).apply()
-
-                    // ✅ Update UI coin trên thread chính
+                    // ✅ Chỉ cập nhật coin tạm thời và UI
                     gameView.tvCoin?.post {
                         gameView.tvCoin?.text = gameView.player.coins.toString()
                     }

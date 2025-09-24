@@ -17,8 +17,6 @@ class GameActivity : AppCompatActivity() {
     private lateinit var btnMusic: ImageButton
     private lateinit var btnSound: ImageButton
     private lateinit var btnPause: ImageButton
-
-    // ✅ để đảm bảo mỗi ván chỉ lưu 1 lần
     private var progressSaved = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,22 +41,18 @@ class GameActivity : AppCompatActivity() {
         }
         root.addView(gameView, 0)
 
-        // reset coin khi BẮT ĐẦU ván chơi
         gameView.player.coins = 0
         progressSaved = false
         Log.d("GameActivity", "Game started: planet=$planet, coins reset=0")
 
-        // ✅ Khi ván kết thúc (WIN/GAME_OVER) -> lưu coin
         gameView.onGameEnd = {
             runOnUiThread {
                 saveProgress()
             }
         }
 
-        // Restart lại game view
         gameView.onRestart = { runOnUiThread { recreate() } }
 
-        // Quay lại menu
         gameView.onBackToMenu = {
             runOnUiThread {
                 saveProgress()
@@ -70,7 +64,6 @@ class GameActivity : AppCompatActivity() {
             }
         }
 
-        // ========= Button =========
         btnMusic = findViewById(R.id.btnMusic)
         btnSound = findViewById(R.id.btnSound)
         btnPause = findViewById(R.id.btnPause)
@@ -108,11 +101,22 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
+    override fun onBackPressed() {
+        if (!progressSaved && gameView.player.coins > 0) {
+            saveProgress()
+            Log.d("GameActivity", "onBackPressed: saved coins before back")
+        }
+        super.onBackPressed()
+    }
+
     override fun onPause() {
         super.onPause()
         gameView.pause()
         MusicManager.pause()
-        // ❌ không save ở đây nữa (tránh double-save)
+        if (!progressSaved && gameView.player.coins > 0) {
+            saveProgress()
+            Log.d("GameActivity", "onPause: saved coins (any state)")
+        }
     }
 
     override fun onResume() {
@@ -129,28 +133,26 @@ class GameActivity : AppCompatActivity() {
         MusicManager.stop()
     }
 
-    /**
-     * ✅ Lưu coin kiếm được (cộng dồn vĩnh viễn)
-     */
     private fun saveProgress() {
         if (progressSaved) {
-            Log.d("GameActivity", "saveProgress(): already saved this round -> skipping")
+            Log.d("GameActivity", "saveProgress(): already saved -> skipping")
             return
         }
-
-        val earned = gameView.player.coins
-        val oldTotal = PlayerDataManager.getCoins(this)
-        Log.d("GameActivity", "saveProgress() called, earned=$earned, oldTotal=$oldTotal")
-
-        if (earned > 0) {
-            PlayerDataManager.addCoins(this, earned)
-            val newTotal = PlayerDataManager.getCoins(this)
-            Log.d("GameActivity", "Saved progress: earned=$earned, total=$newTotal")
-        } else {
-            Log.d("GameActivity", "No coins to save (earned <= 0)")
+        try {
+            val earned = gameView.player.coins
+            val oldTotal = PlayerDataManager.getCoins(this)
+            Log.d("GameActivity", "saveProgress(): earned=$earned, oldTotal=$oldTotal")
+            if (earned > 0) {
+                PlayerDataManager.addCoins(this, earned)
+                val newTotal = PlayerDataManager.getCoins(this)
+                Log.d("GameActivity", "Saved: newTotal=$newTotal")
+                PlayerDataManager.debugPrefs(this) // In SharedPreferences
+            } else {
+                Log.d("GameActivity", "No coins to save")
+            }
+            progressSaved = true
+        } catch (e: Exception) {
+            Log.e("GameActivity", "saveProgress failed: ${e.message}", e)
         }
-
-        progressSaved = true
-        // ⚠️ không reset coins ở đây, chỉ reset ở lúc bắt đầu game mới
     }
 }
