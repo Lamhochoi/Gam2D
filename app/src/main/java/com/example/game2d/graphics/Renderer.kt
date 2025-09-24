@@ -39,12 +39,22 @@ class Renderer(private val gameView: GameView) {
         drawEnemies(canvas)
         drawExplosions(canvas)   // ⬅️ chuyển lên ngay sau enemy
         drawBullets(canvas)
+        drawCoins(canvas)         // ⬅️ thêm dòng này
         drawFallingObjects(canvas)   // ⬅️ đã gom vào EntityManager
         drawUI(canvas)
         drawBossHp(canvas)
         drawFPS(canvas)
         drawScore(canvas)
     }
+    private fun drawCoins(canvas: Canvas) {
+        val manager = gameView.entityManager
+        manager.activeCoins.forEach { coin ->
+            coin.bitmap?.let {
+                canvas.drawBitmap(it, coin.x, coin.y, null)
+            }
+        }
+    }
+
     // Vẽ Explosion
     private fun drawExplosions(canvas: Canvas) {
         val manager = gameView.entityManager

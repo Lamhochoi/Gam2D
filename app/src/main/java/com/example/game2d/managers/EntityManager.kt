@@ -11,6 +11,7 @@ import android.content.Context
 import android.graphics.BitmapFactory.Options
 import android.util.Log
 
+
 class EntityManager(private val gameView: GameView) {
     var goal: Int = 0 // default, có thể override bởi DifficultyManager
     private var bgY1 = 0f
@@ -24,6 +25,13 @@ class EntityManager(private val gameView: GameView) {
     private val enemyPool = mutableListOf<Enemy>()
     val activeEnemies = mutableListOf<Enemy>()
     private val bossPool = mutableListOf<Enemy>()
+
+    // Tạo Coin Khi enemy chết
+    val coinPool = mutableListOf<Coin>()
+    val activeCoins = mutableListOf<Coin>()
+    var coinBitmap: Bitmap? = null
+    var cachedCoinBitmap: Bitmap? = null
+    var coinSize: Int = 0
 
     // Vụ Nổ
     private val explosionPool = mutableListOf<Explosion>()
@@ -95,6 +103,21 @@ class EntityManager(private val gameView: GameView) {
         }
 
         initExplosionPool(20) // tạo sẵn 20 vụ nổ
+
+
+        //Coin
+        coinBitmap = BitmapFactory.decodeResource(res, R.drawable.coin) // coin.png
+        coinSize = (screenW * 0.06f * GameView.SCALE_FACTOR).toInt()
+        cachedCoinBitmap = Bitmap.createScaledBitmap(coinBitmap!!, coinSize, coinSize, false)
+
+        if (coinPool.size < 20) {
+            repeat(20 - coinPool.size) {
+                coinPool.add(Coin(0f, 0f, coinSize, speed = 10f, bitmap = cachedCoinBitmap, active = false))
+            }
+        } else {
+            coinPool.forEach { it.active = false }
+        }
+
 
 
         playerBitmap = BitmapFactory.decodeResource(res, R.drawable.player4)
@@ -359,42 +382,16 @@ class EntityManager(private val gameView: GameView) {
             bullet.y > screenH + bullet.size || bullet.x < -bullet.size || bullet.x > screenW + bullet.size
         }
 
-        var bossJustDefeated = false
-
-        activeEnemies.removeAll { enemy ->
-            if (enemy.hp <= 0) {
-                // 🔥 Spawn Explosion tại vị trí enemy chết
-                spawnExplosion(
-                    enemy.x + enemy.size / 2f,
-                    enemy.y + enemy.size / 2f,
-                    enemy.size
-                )
-                if (enemy.isBoss) {
-                    Log.d("EntityManager", "Boss HP <= 0 detected (inside removeAll)")
-                    bossJustDefeated = true
-                    enemy.active = false
-                    true
-                } else {
-                    increaseEnemiesKilled()
-                    enemy.active = false
-                    true
+        // Update coin position (chỉ rơi, không check player)
+        activeCoins.forEach { coin ->
+            if (coin.active) {
+                coin.y += coin.speed * deltaTime * 60f
+                if (coin.y > gameView.screenH) {
+                    coin.active = false
                 }
-            } else {
-                false
             }
         }
-
-// Sau removeAll: chỉ set WIN khi đang RUNNING (tránh ghi đè)
-        if (bossJustDefeated && gameView.gameState == GameView.GameState.RUNNING) {
-            Log.d("EntityManager", "Boss defeated -> setting WIN")
-            gameView.gameState = GameView.GameState.WIN
-            // Không gọi gameView.pause() hay stopLoop() ở đây — render phải tiếp tục để vẽ overlay
-            // Ngoài ra có thể tắt nhạc hoặc phát hiệu ứng chiến thắng:
-            // MusicManager.pause()
-        }
-
-
-
+        activeCoins.removeAll { !it.active }
 
         // ✅ Spawn FallingObject ngẫu nhiên
         if ((0..1000).random() < 5) {
@@ -466,7 +463,20 @@ class EntityManager(private val gameView: GameView) {
 
 
 
-
+    fun spawnCoin(x: Float, y: Float) {
+        coinPool.find { !it.active }?.apply {
+            this.x = x
+            this.y = y
+            this.size = coinSize        // ✅ thêm dòng này
+            speed = (8..12).random().toFloat()
+            bitmap = cachedCoinBitmap
+            active = true
+            value = 1
+            if (!activeCoins.contains(this)) {
+                activeCoins.add(this)
+            }
+        }
+    }
     fun handleTouch(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {

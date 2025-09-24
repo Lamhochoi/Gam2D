@@ -10,7 +10,8 @@ data class Player(
     var maxHp: Int = 5,
     var lastShot: Long = 0,
     var shotDelay: Long = 500,
-    var bitmap: Bitmap? = null
+    var bitmap: Bitmap? = null,
+    var coins: Int = 0
 ) {
     fun reset(screenW: Int, screenH: Int) {
         hp = maxHp

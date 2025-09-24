@@ -20,6 +20,7 @@ import android.util.Log
 import com.example.game2d.managers.MusicManager
 import com.example.game2d.managers.SoundManager
 import com.example.game2d.managers.DifficultyManager
+import android.widget.TextView
 
 open class GameView @JvmOverloads constructor(
     context: Context,
@@ -30,16 +31,19 @@ open class GameView @JvmOverloads constructor(
     enum class GameState { RUNNING, GAME_OVER, WIN, PAUSED }
 
     var lastHitTime: Long = 0L
+    var tvCoin: TextView? = null
 
     companion object {
         const val SCALE_FACTOR = 2f
     }
-
+    var onGameEnd: (() -> Unit)? = null   // ✅ thêm callback khi ván kết thúc
     var gameState = GameState.RUNNING
         set(value) {
             field = value
             if (value == GameState.GAME_OVER || value == GameState.WIN) {
                 overlayStartTime = System.currentTimeMillis()
+                // ✅ Báo về GameActivity để lưu coin ngay khi ván kết thúc
+                onGameEnd?.invoke()
             }
         }
 
@@ -152,8 +156,6 @@ open class GameView @JvmOverloads constructor(
         }
     }
 
-
-
     fun update(deltaTime: Float) {
         if (gameState == GameState.RUNNING) {
             entityManager.update(deltaTime)
@@ -184,7 +186,6 @@ open class GameView @JvmOverloads constructor(
             gameState = GameState.GAME_OVER
         }
     }
-
 
     fun render(canvas: Canvas) {
         Log.v("GameView", "render(): state=$gameState")
@@ -247,29 +248,25 @@ open class GameView @JvmOverloads constructor(
         // --- Icon ---
         when (gameState) {
             GameState.WIN -> scaledTrophy?.let {
-                val offsetY = 100f   // khoảng cách từ top màn hình xuống
+                val offsetY = 100f
                 val iconX = screenW / 2f - it.width / 2
                 val iconY = offsetY
                 canvas.drawBitmap(it, iconX, iconY, null)
             }
-
             GameState.GAME_OVER -> scaledSkull?.let {
-                val offsetY = 100f   // chỉnh ở đây nếu muốn icon cao/thấp hơn
+                val offsetY = 100f
                 val iconX = screenW / 2f - it.width / 2
                 val iconY = offsetY
                 canvas.drawBitmap(it, iconX, iconY, null)
             }
-
             GameState.PAUSED -> scaledPause?.let { bmp ->
-                val offsetY = 150f   // chỉnh ở đây riêng cho pause
+                val offsetY = 150f
                 val left = screenW / 2f - bmp.width / 2
                 val top = offsetY
                 canvas.drawBitmap(bmp, left, top, null)
             }
-
             else -> {}
         }
-
 
         // --- Title ---
         val scale = 1f + 0.05f * kotlin.math.sin(elapsed * 2)

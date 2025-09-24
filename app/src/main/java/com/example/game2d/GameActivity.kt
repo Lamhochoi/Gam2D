@@ -1,16 +1,14 @@
 package com.example.game2d
 
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.util.Log
-import android.view.Window
-import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import com.example.game2d.core.GameView
 import com.example.game2d.managers.MusicManager
+import com.example.game2d.managers.PlayerDataManager
 import com.example.game2d.managers.SoundManager
 
 class GameActivity : AppCompatActivity() {
@@ -20,6 +18,8 @@ class GameActivity : AppCompatActivity() {
     private lateinit var btnSound: ImageButton
     private lateinit var btnPause: ImageButton
 
+    // ✅ để đảm bảo mỗi ván chỉ lưu 1 lần
+    private var progressSaved = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,36 +34,46 @@ class GameActivity : AppCompatActivity() {
             "SATURN" -> SaturnGameView(this)
             else -> MarsGameView(this)
         }
+        gameView.tvCoin = findViewById(R.id.tvCoin)
 
         val root = findViewById<FrameLayout>(R.id.game_container) ?: run {
             Log.e("GameActivity", "game_container not found")
             finish()
             return
         }
-        // Không xóa hết view gốc nữa, chỉ add gameView vào dưới cùng
         root.addView(gameView, 0)
 
+        // reset coin khi BẮT ĐẦU ván chơi
+        gameView.player.coins = 0
+        progressSaved = false
+        Log.d("GameActivity", "Game started: planet=$planet, coins reset=0")
+
+        // ✅ Khi ván kết thúc (WIN/GAME_OVER) -> lưu coin
+        gameView.onGameEnd = {
+            runOnUiThread {
+                saveProgress()
+            }
+        }
+
+        // Restart lại game view
         gameView.onRestart = { runOnUiThread { recreate() } }
+
+        // Quay lại menu
         gameView.onBackToMenu = {
             runOnUiThread {
-                startActivity(Intent(this, MainActivity::class.java))
+                saveProgress()
+                val resultIntent = Intent().apply {
+                    putExtra("COIN_UPDATED", true)
+                }
+                setResult(RESULT_OK, resultIntent)
                 finish()
             }
         }
 
-        btnMusic = findViewById<ImageButton>(R.id.btnMusic) ?: run {
-            Log.e("GameActivity", "btnMusic not found")
-            return
-        }
-        btnSound = findViewById<ImageButton>(R.id.btnSound) ?: run {
-            Log.e("GameActivity", "btnSound not found")
-            return
-        }
-        btnPause = findViewById<ImageButton>(R.id.btnPause) ?: run {
-            Log.e("GameActivity", "btnPause not found")
-            return
-        }
-
+        // ========= Button =========
+        btnMusic = findViewById(R.id.btnMusic)
+        btnSound = findViewById(R.id.btnSound)
+        btnPause = findViewById(R.id.btnPause)
 
         MusicManager.init(this)
         MusicManager.setMusicEnabled(true)
@@ -73,51 +83,36 @@ class GameActivity : AppCompatActivity() {
             val enabled = !MusicManager.isMusicEnabled()
             MusicManager.setMusicEnabled(enabled)
             if (enabled) MusicManager.start(this) else MusicManager.pause()
-            btnMusic.setImageResource(
-                if (enabled) R.drawable.ic_music_on else R.drawable.ic_music_off
-            )
+            btnMusic.setImageResource(if (enabled) R.drawable.ic_music_on else R.drawable.ic_music_off)
         }
 
         btnSound.setOnClickListener {
             val enabled = !SoundManager.isSoundEnabled()
-            // Bật/tắt cả hai
             SoundManager.setSoundEnabled(enabled)
             MusicManager.setMusicEnabled(enabled)
-
-            if (enabled) {
-                MusicManager.start(this)
-            } else {
-                MusicManager.pause()
-            }
-
-            // Cập nhật cả 2 icon
-            btnSound.setImageResource(
-                if (enabled) R.drawable.ic_sound_on else R.drawable.ic_sound_off
-            )
-            btnMusic.setImageResource(
-                if (enabled) R.drawable.ic_music_on else R.drawable.ic_music_off
-            )
+            if (enabled) MusicManager.start(this) else MusicManager.pause()
+            btnSound.setImageResource(if (enabled) R.drawable.ic_sound_on else R.drawable.ic_sound_off)
+            btnMusic.setImageResource(if (enabled) R.drawable.ic_music_on else R.drawable.ic_music_off)
         }
-
 
         btnPause.setOnClickListener {
             if (gameView.gameState == GameView.GameState.RUNNING) {
                 gameView.pause()
                 gameView.gameState = GameView.GameState.PAUSED
-                btnPause.setImageResource(R.drawable.ic_play) // icon "play"
+                btnPause.setImageResource(R.drawable.ic_play)
             } else if (gameView.gameState == GameView.GameState.PAUSED) {
                 gameView.resume()
                 gameView.gameState = GameView.GameState.RUNNING
-                btnPause.setImageResource(R.drawable.ic_pause) // icon "pause"
+                btnPause.setImageResource(R.drawable.ic_pause)
             }
         }
-
     }
 
     override fun onPause() {
         super.onPause()
         gameView.pause()
         MusicManager.pause()
+        // ❌ không save ở đây nữa (tránh double-save)
     }
 
     override fun onResume() {
@@ -132,5 +127,30 @@ class GameActivity : AppCompatActivity() {
         super.onDestroy()
         gameView.pause()
         MusicManager.stop()
+    }
+
+    /**
+     * ✅ Lưu coin kiếm được (cộng dồn vĩnh viễn)
+     */
+    private fun saveProgress() {
+        if (progressSaved) {
+            Log.d("GameActivity", "saveProgress(): already saved this round -> skipping")
+            return
+        }
+
+        val earned = gameView.player.coins
+        val oldTotal = PlayerDataManager.getCoins(this)
+        Log.d("GameActivity", "saveProgress() called, earned=$earned, oldTotal=$oldTotal")
+
+        if (earned > 0) {
+            PlayerDataManager.addCoins(this, earned)
+            val newTotal = PlayerDataManager.getCoins(this)
+            Log.d("GameActivity", "Saved progress: earned=$earned, total=$newTotal")
+        } else {
+            Log.d("GameActivity", "No coins to save (earned <= 0)")
+        }
+
+        progressSaved = true
+        // ⚠️ không reset coins ở đây, chỉ reset ở lúc bắt đầu game mới
     }
 }

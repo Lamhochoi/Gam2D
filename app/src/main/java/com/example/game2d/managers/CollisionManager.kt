@@ -1,5 +1,6 @@
 package com.example.game2d.managers
 
+import android.content.Context
 import android.graphics.RectF
 import com.example.game2d.core.GameView
 import com.example.game2d.entities.Enemy
@@ -16,39 +17,76 @@ class CollisionManager(private val gameView: GameView) {
     fun checkCollisions() {
         val entityManager = gameView.entityManager
 
-        // Bullet → Enemy
-        entityManager.activeBullets.removeAll { b ->
-            var hit = false
-            bulletRect.set(b.x, b.y, b.x + b.size, b.y + b.size)
-            val deadEnemies = mutableListOf<Enemy>()
+        // Coin → Player
+        entityManager.activeCoins.forEach { coin ->
+            if (coin.active) {
+                playerRect.set(
+                    gameView.player.x, gameView.player.y,
+                    gameView.player.x + gameView.player.size,
+                    gameView.player.y + gameView.player.size
+                )
+                val coinRect = RectF(coin.x, coin.y, coin.x + coin.size, coin.y + coin.size)
 
-            entityManager.activeEnemies.forEach { e ->
+                if (RectF.intersects(playerRect, coinRect)) {
+                    coin.active = false
+                    gameView.player.coins += coin.value
+
+                    // ✅ Lưu coin tổng vào SharedPreferences
+                    val prefs = gameView.context.getSharedPreferences("game_data", Context.MODE_PRIVATE)
+                    prefs.edit().putInt("total_coins", gameView.player.coins).apply()
+
+                    // ✅ Update UI coin trên thread chính
+                    gameView.tvCoin?.post {
+                        gameView.tvCoin?.text = gameView.player.coins.toString()
+                    }
+                    //SoundManager.playCoin()
+                }
+            }
+        }
+
+        // Bullet → Enemy
+        val bulletIterator = entityManager.activeBullets.iterator()
+        while (bulletIterator.hasNext()) {
+            val b = bulletIterator.next()
+            bulletRect.set(b.x, b.y, b.x + b.size, b.y + b.size)
+            var hit = false
+
+            val enemyIterator = entityManager.activeEnemies.iterator()
+            while (enemyIterator.hasNext()) {
+                val e = enemyIterator.next()
                 enemyRect.set(e.x, e.y, e.x + e.size, e.y + e.size)
+
                 if (RectF.intersects(enemyRect, bulletRect)) {
                     e.hp--
-                    if (e.hp <= 0) {
-                        deadEnemies.add(e)
+                    if (e.hp <= 0 && e.active) {
+                        e.active = false
                         if (e.isBoss) {
-                            // Boss chết → để EntityManager/GameView xử lý WIN
-                            e.active = false
+                            // Boss chết → WIN
+                            entityManager.spawnExplosion(e.x + e.size / 2f, e.y + e.size / 2f, e.size)
                             if (gameView.gameState == GameView.GameState.RUNNING) {
                                 gameView.gameState = GameView.GameState.WIN
                             }
                         } else {
-                            // Enemy thường chết → tăng kill ngay lập tức
+                            // Enemy thường chết
                             entityManager.increaseEnemiesKilled()
-                            e.active = false
-                            // GỌI NỔ
-                            entityManager.spawnExplosion(e.x + e.size/2f, e.y + e.size/2f, e.size)
+                            entityManager.spawnExplosion(e.x + e.size / 2f, e.y + e.size / 2f, e.size)
+
+                            // ✅ Spawn Coin tại đây
+                            entityManager.spawnCoin(
+                                e.x + e.size / 2f - entityManager.coinSize / 2f,
+                                e.y + e.size / 2f - entityManager.coinSize / 2f
+                            )
                         }
+                        enemyIterator.remove() // ✅ xoá ngay enemy chết
                     }
                     hit = true
                 }
             }
 
-            entityManager.activeEnemies.removeAll(deadEnemies)
-            if (hit) b.active = false
-            hit
+            if (hit) {
+                b.active = false
+                bulletIterator.remove() // xoá bullet đã va chạm
+            }
         }
 
         // Enemy bullet → Player
@@ -61,7 +99,7 @@ class CollisionManager(private val gameView: GameView) {
             bulletRect.set(b.x, b.y, b.x + b.size, b.y + b.size)
 
             if (RectF.intersects(playerRect, bulletRect)) {
-                gameView.onPlayerHit(1) // trừ 1 máu, có hiệu ứng flash & rung
+                gameView.onPlayerHit(1)
                 b.active = false
                 true
             } else false
@@ -79,7 +117,7 @@ class CollisionManager(private val gameView: GameView) {
 
                 if (RectF.intersects(playerRect, fallingRect)) {
                     f.active = false
-                    gameView.onPlayerHit(1) // chỉ trừ 1 máu
+                    gameView.onPlayerHit(1)
                 }
             }
         }
