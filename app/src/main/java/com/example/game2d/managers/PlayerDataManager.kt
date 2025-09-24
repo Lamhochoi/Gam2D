@@ -9,9 +9,9 @@ object PlayerDataManager {
     private const val KEY_COINS = "total_coins"
     private const val KEY_ENERGY = "total_energy"
     private const val KEY_GEMS = "total_gems"
-    private const val KEY_LAST_ENERGY_UPDATE = "last_energy_update" // Thêm key lưu timestamp
-    private const val ENERGY_MAX = 30 // Giới hạn tối đa energy
-    private const val ENERGY_RECHARGE_SECONDS = 120L // 2 phút = 120 giây
+    private const val KEY_LAST_ENERGY_UPDATE = "last_energy_update"
+    private const val ENERGY_MAX = 30
+    private const val ENERGY_RECHARGE_SECONDS = 120L
 
     private fun getPrefs(context: Context) =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -43,9 +43,8 @@ object PlayerDataManager {
         val prefs = getPrefs(context)
         val currentEnergy = prefs.getInt(KEY_ENERGY, 30)
         val lastUpdate = prefs.getLong(KEY_LAST_ENERGY_UPDATE, 0)
-        val currentTime = System.currentTimeMillis() / 1000 // Thời gian hiện tại (giây)
+        val currentTime = System.currentTimeMillis() / 1000
 
-        // Tính số energy cần hồi dựa trên thời gian offline
         if (lastUpdate > 0 && currentTime > lastUpdate) {
             val secondsElapsed = currentTime - lastUpdate
             val energyToAdd = (secondsElapsed / ENERGY_RECHARGE_SECONDS).toInt()
@@ -64,16 +63,16 @@ object PlayerDataManager {
     }
 
     fun setEnergy(context: Context, value: Int) {
-        val newValue = value.coerceIn(0, ENERGY_MAX) // Giới hạn 0-30
+        val newValue = value.coerceIn(0, ENERGY_MAX)
         getPrefs(context).edit()
             .putInt(KEY_ENERGY, newValue)
-            .putLong(KEY_LAST_ENERGY_UPDATE, System.currentTimeMillis() / 1000) // Cập nhật timestamp
+            .putLong(KEY_LAST_ENERGY_UPDATE, System.currentTimeMillis() / 1000)
             .commit()
         Log.d(TAG, "setEnergy($newValue)")
     }
 
     fun useEnergy(context: Context, cost: Int): Boolean {
-        val current = getEnergy(context) // Gọi getEnergy để cập nhật offline
+        val current = getEnergy(context)
         return if (current >= cost) {
             setEnergy(context, current - cost)
             Log.d(TAG, "useEnergy($cost): success, now ${current - cost}")
@@ -116,6 +115,61 @@ object PlayerDataManager {
         val total = old + amount
         prefs.edit().putInt(KEY_GEMS, total).apply()
         Log.d(TAG, "addGems(): old=$old, amount=$amount, total=$total")
+    }
+
+    fun buyEnergy(context: Context, energyAmount: Int, gemCost: Int): Boolean {
+        val currentGems = getGems(context)
+        val currentEnergy = getEnergy(context)
+        if (currentGems >= gemCost) {
+            val newEnergy = minOf(currentEnergy + energyAmount, ENERGY_MAX)
+            val newGems = currentGems - gemCost
+            getPrefs(context).edit()
+                .putInt(KEY_ENERGY, newEnergy)
+                .putInt(KEY_GEMS, newGems)
+                .putLong(KEY_LAST_ENERGY_UPDATE, System.currentTimeMillis() / 1000)
+                .commit()
+            Log.d(TAG, "buyEnergy(): success, added $energyAmount energy, spent $gemCost gems, newEnergy=$newEnergy, newGems=$newGems")
+            return true
+        } else {
+            Log.d(TAG, "buyEnergy(): failed, need $gemCost gems, have $currentGems")
+            return false
+        }
+    }
+
+    fun buyEnergyWithCoins(context: Context, energyAmount: Int, coinCost: Int): Boolean {
+        val currentCoins = getCoins(context)
+        val currentEnergy = getEnergy(context)
+        if (currentCoins >= coinCost) {
+            val newEnergy = minOf(currentEnergy + energyAmount, ENERGY_MAX)
+            val newCoins = currentCoins - coinCost
+            getPrefs(context).edit()
+                .putInt(KEY_ENERGY, newEnergy)
+                .putInt(KEY_COINS, newCoins)
+                .putLong(KEY_LAST_ENERGY_UPDATE, System.currentTimeMillis() / 1000)
+                .commit()
+            Log.d(TAG, "buyEnergyWithCoins(): success, added $energyAmount energy, spent $coinCost coins, newEnergy=$newEnergy, newCoins=$newCoins")
+            return true
+        } else {
+            Log.d(TAG, "buyEnergyWithCoins(): failed, need $coinCost coins, have $currentCoins")
+            return false
+        }
+    }
+
+    fun buyGemsWithCoins(context: Context, gemAmount: Int, coinCost: Int): Boolean {
+        val currentCoins = getCoins(context)
+        if (currentCoins >= coinCost) {
+            val newGems = getGems(context) + gemAmount
+            val newCoins = currentCoins - coinCost
+            getPrefs(context).edit()
+                .putInt(KEY_GEMS, newGems)
+                .putInt(KEY_COINS, newCoins)
+                .commit()
+            Log.d(TAG, "buyGemsWithCoins(): success, added $gemAmount gems, spent $coinCost coins")
+            return true
+        } else {
+            Log.d(TAG, "buyGemsWithCoins(): failed, need $coinCost coins, have $currentCoins")
+            return false
+        }
     }
 
     fun clearAllForDebug(context: Context) {

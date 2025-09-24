@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/shop_dialog_bg">
+
+    <TextView
+        android:id="@+id/tvShopTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cửa Hàng"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#333"
+        android:layout_gravity="center"
+        android:layout_marginBottom="12dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp"
+        android:gravity="center">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginEnd="16dp">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/gem"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:id="@+id/tvShopGems"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Số Gems: 10"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#333" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/coin"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:id="@+id/tvShopCoins"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Số Coins: 0"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#333" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvShopItems"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:overScrollMode="never" />
+
+    <Button
+        android:id="@+id/btnCloseShop"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:text="Đóng"
+        android:layout_gravity="center"
+        android:background="@drawable/btn_close_bg"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:elevation="4dp" />
+</LinearLayout>
