@@ -3,6 +3,8 @@ package com.example.game2d
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
@@ -16,6 +18,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvCoin: TextView
     private lateinit var tvEnergy: TextView
     private lateinit var tvGem: TextView
+    private val handler = Handler(Looper.getMainLooper())
+    private val energyRechargeRunnable = object : Runnable {
+        override fun run() {
+            PlayerDataManager.addEnergy(this@MainActivity, 1)
+            loadPlayerData() // Cập nhật UI
+            Log.d("MainActivity", "Energy recharged, scheduling next in 2 minutes")
+            handler.postDelayed(this, 120_000) // 120 giây = 2 phút
+        }
+    }
 
     private val gameLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -47,6 +58,7 @@ class MainActivity : AppCompatActivity() {
 
         loadPlayerData()
         PlayerDataManager.debugPrefs(this)
+        startEnergyRechargeTimer()
     }
 
     override fun onResume() {
@@ -54,6 +66,24 @@ class MainActivity : AppCompatActivity() {
         loadPlayerData()
         Log.d("MainActivity", "onResume: reloaded player data")
         PlayerDataManager.debugPrefs(this)
+        startEnergyRechargeTimer()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        handler.removeCallbacks(energyRechargeRunnable) // Dừng timer khi pause
+        Log.d("MainActivity", "onPause: stopped energy recharge timer")
+    }
+
+    private fun startEnergyRechargeTimer() {
+        handler.removeCallbacks(energyRechargeRunnable) // Xóa timer cũ
+        val currentEnergy = PlayerDataManager.getEnergy(this)
+        if (currentEnergy < 30) { // Chỉ chạy timer nếu chưa đầy
+            handler.postDelayed(energyRechargeRunnable, 120_000)
+            Log.d("MainActivity", "Started energy recharge timer, currentEnergy=$currentEnergy")
+        } else {
+            Log.d("MainActivity", "Energy full ($currentEnergy), no timer needed")
+        }
     }
 
     private fun loadPlayerData() {
