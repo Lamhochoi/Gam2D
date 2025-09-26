@@ -131,10 +131,10 @@
         android:layout_height="48dp"
         android:layout_below="@id/statusBar"
         android:layout_alignParentEnd="true"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="20dp"
         android:layout_marginEnd="20dp"
         android:background="@null"
-        android:src="@drawable/ic_shop"
+        android:src="@drawable/shop"
         android:scaleType="fitCenter"
         android:contentDescription="Mở cửa hàng"
         android:elevation="8dp" />
@@ -144,18 +144,18 @@
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Chọn Thử Thách"
-        android:textSize="40sp"
-        android:textStyle="bold"
+        android:layout_below="@id/statusBar"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="100dp"
         android:fontFamily="@font/robotomono_bold"
-        android:textColor="@android:color/white"
         android:shadowColor="#AA00FF"
         android:shadowDx="0"
         android:shadowDy="0"
         android:shadowRadius="15"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="80dp"
-        android:layout_below="@id/statusBar"/>
+        android:text="OUTER SPACES"
+        android:textColor="@android:color/white"
+        android:textSize="40sp"
+        android:textStyle="bold" />
 
     <!-- Menu nút chọn hành tinh -->
     <RelativeLayout
@@ -163,7 +163,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/tvTitle"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="80dp"
         android:layout_centerHorizontal="true">
 
         <!-- Nút Sao Hỏa -->

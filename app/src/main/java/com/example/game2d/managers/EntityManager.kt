@@ -120,10 +120,10 @@ class EntityManager(private val gameView: GameView) {
 
 
 
-        playerBitmap = BitmapFactory.decodeResource(res, R.drawable.player4)
+        playerBitmap = BitmapFactory.decodeResource(res, R.drawable.player_mars)
         enemyBitmap = BitmapFactory.decodeResource(res, R.drawable.enemyred)
         bossBitmap = BitmapFactory.decodeResource(res, R.drawable.boss_end)
-        bulletBitmap = BitmapFactory.decodeResource(res, R.drawable.bullet3)
+        bulletBitmap = BitmapFactory.decodeResource(res, R.drawable.bullet5)
         fallingBitmap = BitmapFactory.decodeResource(res, R.drawable.rock)
         //Player
         val playerSize = (screenW * 0.14f * GameView.SCALE_FACTOR).toInt()

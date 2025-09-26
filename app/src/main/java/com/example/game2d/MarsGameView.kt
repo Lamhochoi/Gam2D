@@ -19,6 +19,6 @@ class MarsGameView @JvmOverloads constructor(
         DifficultyManager.apply("MARS", player, this)
 
         // Set background sau khi có screenW, screenH
-        entityManager.setBackground(context, R.drawable.mars_bgr, screenW, screenH)
+        entityManager.setBackground(context, R.drawable.bgr_marss, screenW, screenH)
     }
 }
