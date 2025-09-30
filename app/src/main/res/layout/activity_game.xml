@@ -16,11 +16,25 @@
         android:layout_margin="16dp"
         android:layout_gravity="top|end"/>
 
+    <!-- Nút cài đặt (trái, trên cùng) -->
+    <ImageButton
+        android:id="@+id/btnSettings"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="130dp"
+        android:layout_marginStart="16dp"
+        android:background="@android:color/transparent"
+        android:src="@drawable/setting"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/btn_settings_desc"/>
+
     <!-- Nút nhạc nền (trái, giữa màn hình) -->
     <ImageButton
         android:id="@+id/btnMusic"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_gravity="center_vertical|start"
         android:layout_marginStart="16dp"
         android:background="@android:color/transparent"
@@ -32,8 +46,8 @@
     <!-- Nút hiệu ứng âm thanh (phải, giữa màn hình) -->
     <ImageButton
         android:id="@+id/btnSound"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_gravity="center_vertical|end"
         android:layout_marginEnd="16dp"
         android:background="@android:color/transparent"
@@ -45,8 +59,8 @@
     <!-- Nút pause -->
     <ImageButton
         android:id="@+id/btnPause"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:layout_gravity="top|end"
         android:layout_marginTop="70dp"
         android:layout_marginEnd="16dp"
@@ -55,7 +69,5 @@
         android:scaleType="fitCenter"
         android:adjustViewBounds="true"
         android:contentDescription="@string/btn_pause_desc"/>
-
-
 
 </FrameLayout>
