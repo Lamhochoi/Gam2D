@@ -9,44 +9,67 @@ import com.example.game2d.core.GameView
 import com.example.game2d.entities.*
 import android.content.Context
 import android.graphics.BitmapFactory.Options
+import android.graphics.Matrix
 import android.util.Log
 
-
+// Lớp quản lý tất cả thực thể trong game (player, enemy, bullet, coin, power-up, v.v.)
 class EntityManager(private val gameView: GameView) {
-    var goal: Int = 0 // default, có thể override bởi DifficultyManager
+    // Mục tiêu số enemy cần tiêu diệt để spawn boss
+    var goal: Int = 0
+    // Tọa độ y của hai background để tạo hiệu ứng cuộn
     private var bgY1 = 0f
     private var bgY2 = 0f
+    // Tốc độ cuộn background
     private var backgroundSpeed = 5f
 
+    // Pool và danh sách active cho đạn của player
     private val bulletPool = mutableListOf<Bullet>()
     val activeBullets = mutableListOf<Bullet>()
+    // Pool và danh sách active cho đạn của enemy
     private val enemyBulletPool = mutableListOf<Bullet>()
     val activeEnemyBullets = mutableListOf<Bullet>()
+    // Pool và danh sách active cho enemy
     private val enemyPool = mutableListOf<Enemy>()
     val activeEnemies = mutableListOf<Enemy>()
+    // Pool cho boss
     private val bossPool = mutableListOf<Enemy>()
 
-    // Tạo Coin Khi enemy chết
+    // Pool và danh sách active cho coin
     val coinPool = mutableListOf<Coin>()
     val activeCoins = mutableListOf<Coin>()
     var coinBitmap: Bitmap? = null
     var cachedCoinBitmap: Bitmap? = null
     var coinSize: Int = 0
 
-    // Vụ Nổ
+    // Pool và danh sách active cho hiệu ứng nổ
     private val explosionPool = mutableListOf<Explosion>()
     val activeExplosions = mutableListOf<Explosion>()
     private var explosionFrames: List<Bitmap>? = null
 
-    // ✅ Bổ sung FallingObject
+    // Pool và danh sách active cho vật phẩm rơi (rock)
     private val fallingObjectPool = mutableListOf<FallingObject>()
     val activeFallingObjects = mutableListOf<FallingObject>()
 
+    // Pool và danh sách active cho power-up
+    private val powerUpPool = mutableListOf<PowerUp>()
+    val activePowerUps = mutableListOf<PowerUp>()
+    private var healBitmap: Bitmap? = null
+    private var shieldBitmap: Bitmap? = null
+    private var doubleShotBitmap: Bitmap? = null
+    private var cachedHealBitmap: Bitmap? = null
+    private var cachedShieldBitmap: Bitmap? = null
+    private var cachedDoubleShotBitmap: Bitmap? = null
+    private var powerUpSize: Int = 0
+
+    // Trạng thái đã spawn boss chưa
     private var bossSpawned = false
+    // Số enemy đã tiêu diệt
     var enemiesKilled = 0
         private set
+    // Thời gian spawn enemy lần cuối
     private var lastEnemySpawn: Long = 0
 
+    // Bitmap gốc và cache cho các thực thể
     private var playerBitmap: Bitmap? = null
     private var enemyBitmap: Bitmap? = null
     private var bossBitmap: Bitmap? = null
@@ -54,25 +77,25 @@ class EntityManager(private val gameView: GameView) {
     private var backgroundBitmap: Bitmap? = null
     private var scaledBackground: Bitmap? = null
 
-    // Cached scaled sprites
     private var cachedPlayerBitmap: Bitmap? = null
     private var cachedEnemyBitmap: Bitmap? = null
     private var cachedBossBitmap: Bitmap? = null
     private var cachedBulletBitmapPlayer: Bitmap? = null
     private var cachedBulletBitmapEnemy: Bitmap? = null
 
-    // ✅ Thêm sprite FallingObject
     private var fallingBitmap: Bitmap? = null
     private var cachedFallingBitmap: Bitmap? = null
     private var fallingObjectSize: Int = 0
 
-    // Kích thước bullet đã scale
     private var playerBulletSize: Int = 0
     private var enemyBulletSize: Int = 0
 
-    // Flag báo đã nạp tài nguyên
+    // Trạng thái khởi tạo tài nguyên
     private var resourcesInitialized = false
+    // Trạng thái kéo thả player
+    private var isDraggingPlayer = false
 
+    // Thiết lập background, scale theo kích thước màn hình
     fun setBackground(context: Context, resId: Int, width: Int, height: Int) {
         val optsBounds = Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeResource(context.resources, resId, optsBounds)
@@ -87,14 +110,12 @@ class EntityManager(private val gameView: GameView) {
         } else raw
     }
 
-    private var isDraggingPlayer = false
-
-    //Khởi tạo các tài nguyên
+    // Khởi tạo tài nguyên (bitmap, pool) cho game
     fun initResources(screenW: Int, screenH: Int) {
         val res = gameView.resources
-        // Explosion frames
+        // Load và cắt sprite sheet cho hiệu ứng nổ
         val explosionSheet = BitmapFactory.decodeResource(res, R.drawable.explosion)
-        val frameCount = 6 // số frame trong ảnh explosion.png
+        val frameCount = 6
         val frameW = explosionSheet.width / frameCount
         val frameH = explosionSheet.height
 
@@ -102,14 +123,25 @@ class EntityManager(private val gameView: GameView) {
             Bitmap.createBitmap(explosionSheet, i * frameW, 0, frameW, frameH)
         }
 
-        initExplosionPool(20) // tạo sẵn 20 vụ nổ
+        initExplosionPool(20)
 
+        // Load bitmap cho power-up
+        healBitmap = BitmapFactory.decodeResource(res, R.drawable.health_pack)
+        shieldBitmap = BitmapFactory.decodeResource(res, R.drawable.shield_pack)
+        doubleShotBitmap = BitmapFactory.decodeResource(res, R.drawable.double_shot)
+        powerUpSize = (screenW * 0.06f * GameView.SCALE_FACTOR).toInt()
+        cachedHealBitmap = Bitmap.createScaledBitmap(healBitmap!!, powerUpSize, powerUpSize, false)
+        cachedShieldBitmap = Bitmap.createScaledBitmap(shieldBitmap!!, powerUpSize, powerUpSize, false)
+        cachedDoubleShotBitmap = Bitmap.createScaledBitmap(doubleShotBitmap!!, powerUpSize, powerUpSize, false)
 
-        //Coin
-        coinBitmap = BitmapFactory.decodeResource(res, R.drawable.coin) // coin.png
+        initPowerUpPool(10)
+
+        // Load và scale bitmap cho coin
+        coinBitmap = BitmapFactory.decodeResource(res, R.drawable.coin)
         coinSize = (screenW * 0.06f * GameView.SCALE_FACTOR).toInt()
         cachedCoinBitmap = Bitmap.createScaledBitmap(coinBitmap!!, coinSize, coinSize, false)
 
+        // Khởi tạo pool cho coin
         if (coinPool.size < 20) {
             repeat(20 - coinPool.size) {
                 coinPool.add(Coin(0f, 0f, coinSize, speed = 10f, bitmap = cachedCoinBitmap, active = false))
@@ -118,14 +150,14 @@ class EntityManager(private val gameView: GameView) {
             coinPool.forEach { it.active = false }
         }
 
-
-
+        // Load bitmap cho player, enemy, boss, bullet, falling object
         playerBitmap = BitmapFactory.decodeResource(res, R.drawable.player_mars)
         enemyBitmap = BitmapFactory.decodeResource(res, R.drawable.enemyred)
         bossBitmap = BitmapFactory.decodeResource(res, R.drawable.boss_end)
         bulletBitmap = BitmapFactory.decodeResource(res, R.drawable.bullet5)
         fallingBitmap = BitmapFactory.decodeResource(res, R.drawable.rock)
-        //Player
+
+        // Thiết lập kích thước và vị trí ban đầu cho player
         val playerSize = (screenW * 0.14f * GameView.SCALE_FACTOR).toInt()
         gameView.player.size = playerSize
         cachedPlayerBitmap = Bitmap.createScaledBitmap(playerBitmap!!, playerSize, playerSize, false)
@@ -133,30 +165,43 @@ class EntityManager(private val gameView: GameView) {
         gameView.player.x = screenW / 2f - playerSize / 2
         gameView.player.y = screenH * 0.7f
 
-        // Enemy + Boss
         initEnemyPool(20)
 
-        // Bullet (scale 1 lần duy nhất)
+        // Thiết lập bitmap cho đạn player và enemy
         playerBulletSize = (screenW * 0.05f * GameView.SCALE_FACTOR).toInt()
-        cachedBulletBitmapPlayer = Bitmap.createScaledBitmap(bulletBitmap!!, playerBulletSize, playerBulletSize, false)
+        cachedBulletBitmapPlayer = Bitmap.createScaledBitmap(bulletBitmap!!, playerBulletSize, playerBulletSize, false).let {
+            val matrix = Matrix().apply { postRotate(0f) } // Đạn player hướng lên (giả sử bullet5.png đã đúng hướng)
+            Bitmap.createBitmap(it, 0, 0, it.width, it.height, matrix, true)
+        }
+        enemyBulletSize = (screenW * 0.04f * GameView.SCALE_FACTOR).toInt()
+        cachedBulletBitmapEnemy = Bitmap.createScaledBitmap(bulletBitmap!!, enemyBulletSize, enemyBulletSize, false).let {
+            val matrix = Matrix().apply { postRotate(180f) } // Đạn enemy hướng xuống (giả sử bullet5.png đã đúng hướng)
+            Bitmap.createBitmap(it, 0, 0, it.width, it.height, matrix, true)
+        }
 
-        enemyBulletSize = (screenW * 0.03f * GameView.SCALE_FACTOR).toInt()
-        cachedBulletBitmapEnemy = Bitmap.createScaledBitmap(bulletBitmap!!, enemyBulletSize, enemyBulletSize, false)
-
-        // Bullet pool
         initBulletPool(50)
-
-        // ✅ FallingObject pool
         initFallingObjectPool(15)
 
-        // Reset trạng thái
+        // Thiết lập vị trí ban đầu của background
         bgY1 = 0f
         bgY2 = -screenH.toFloat()
         bossSpawned = false
         enemiesKilled = 0
-
         resourcesInitialized = true
     }
+
+    // Khởi tạo pool cho power-up
+    private fun initPowerUpPool(size: Int) {
+        if (powerUpPool.size < size) {
+            repeat(size - powerUpPool.size) {
+                powerUpPool.add(PowerUp(active = false))
+            }
+        } else {
+            powerUpPool.forEach { it.active = false }
+        }
+    }
+
+    // Khởi tạo pool cho hiệu ứng nổ
     private fun initExplosionPool(size: Int) {
         if (explosionPool.size < size) {
             repeat(size - explosionPool.size) {
@@ -167,21 +212,33 @@ class EntityManager(private val gameView: GameView) {
         }
     }
 
-
+    // Khởi tạo pool cho đạn (player và enemy)
     private fun initBulletPool(size: Int) {
         if (bulletPool.size < size) {
-            repeat(size - bulletPool.size) { bulletPool.add(Bullet(0f, 0f, bitmap = null, active = false)) }
+            repeat(size - bulletPool.size) {
+                bulletPool.add(Bullet(0f, 0f, size = 0f, speed = 0f, angle = 0f, bitmap = null, active = false))
+            }
         } else {
-            bulletPool.forEach { it.active = false }
+            bulletPool.forEach {
+                it.active = false
+                it.speed = 0f
+                it.angle = 0f // Reset angle để tránh lỗi tái sử dụng
+            }
         }
-
         if (enemyBulletPool.size < size) {
-            repeat(size - enemyBulletPool.size) { enemyBulletPool.add(Bullet(0f, 0f, bitmap = null, active = false)) }
+            repeat(size - enemyBulletPool.size) {
+                enemyBulletPool.add(Bullet(0f, 0f, size = 0f, speed = 0f, angle = 0f, bitmap = null, active = false))
+            }
         } else {
-            enemyBulletPool.forEach { it.active = false }
+            enemyBulletPool.forEach {
+                it.active = false
+                it.speed = 0f
+                it.angle = 0f // Reset angle cho đạn enemy
+            }
         }
     }
 
+    // Khởi tạo pool cho enemy và boss
     private fun initEnemyPool(size: Int) {
         val screenW = gameView.screenW
         val enemySize = (screenW * 0.06f * GameView.SCALE_FACTOR).toInt()
@@ -229,7 +286,8 @@ class EntityManager(private val gameView: GameView) {
             }
         }
     }
-    // ✅ Hàm init FallingObject pool
+
+    // Khởi tạo pool cho falling object
     private fun initFallingObjectPool(size: Int) {
         val screenW = gameView.screenW
         fallingObjectSize = (screenW * 0.08f * GameView.SCALE_FACTOR).toInt()
@@ -238,7 +296,7 @@ class EntityManager(private val gameView: GameView) {
         if (fallingObjectPool.size < size) {
             repeat(size - fallingObjectPool.size) {
                 fallingObjectPool.add(
-                    FallingObject(0f, 0f, fallingObjectSize, speed = 10f, bitmap = cachedFallingBitmap, active = false)
+                    FallingObject(0f, 0f, fallingObjectSize, speed = 12f, bitmap = cachedFallingBitmap, active = false) // Tốc độ rơi của vật phẩm
                 )
             }
         } else {
@@ -246,32 +304,120 @@ class EntityManager(private val gameView: GameView) {
                 obj.size = fallingObjectSize
                 obj.bitmap = cachedFallingBitmap
                 obj.active = false
+                obj.speed = 12f // Reset tốc độ rơi
             }
         }
     }
 
+    // Lấy đạn từ pool
     private fun getBulletFromPool(): Bullet? = bulletPool.find { !it.active }?.also { it.active = true }
     private fun getEnemyBulletFromPool(): Bullet? = enemyBulletPool.find { !it.active }?.also { it.active = true }
     private fun getEnemyFromPool(): Enemy? = enemyPool.find { !it.active }?.also { it.active = true }
     private fun getBossFromPool(): Enemy? = bossPool.find { !it.active }?.also { it.active = true }
-    private fun getExplosionFromPool(): Explosion? =
-        explosionPool.find { !it.active }?.also { it.active = true }
+    private fun getExplosionFromPool(): Explosion? = explosionPool.find { !it.active }?.also { it.active = true }
 
-
-    // ✅ Spawn FallingObject
-    private fun spawnFallingObject() {
-        val screenW = gameView.screenW
-        fallingObjectPool.find { !it.active }?.apply {
-            x = (0..(screenW - size)).random().toFloat()
-            y = -size.toFloat()
-            speed = (8..15).random().toFloat()
-            bitmap = cachedFallingBitmap
+    // Spawn power-up ngẫu nhiên
+    fun spawnPowerUp() {
+        val types = PowerUpType.values()
+        val randomType = types.random()
+        powerUpPool.find { !it.active }?.apply {
+            x = (0..gameView.screenW - size).random().toFloat()
+            y = -size.toFloat() // Spawn ngoài đỉnh màn hình
+            this.size = powerUpSize
+            speed = (6..8).random().toFloat() // Tốc độ rơi của power-up
+            type = randomType
+            bitmap = when (randomType) {
+                PowerUpType.HEAL -> cachedHealBitmap
+                PowerUpType.SHIELD -> cachedShieldBitmap
+                PowerUpType.DOUBLE_SHOT -> cachedDoubleShotBitmap
+            }
             active = true
-            activeFallingObjects.add(this)
+            activePowerUps.add(this)
         }
     }
 
+    // Spawn đạn player
+    fun spawnBullet(x: Float, y: Float) {
+        if (bulletPool.none { !it.active }) {
+            bulletPool.add(Bullet(0f, 0f, size = 0f, speed = 0f, angle = 0f, bitmap = null, active = false))
+            Log.d("EntityManager", "Expanded bulletPool due to depletion")
+        }
+        bulletPool.find { !it.active }?.apply {
+            this.x = x
+            this.y = y
+            this.size = playerBulletSize.toFloat()
+            this.speed = 10f // Tốc độ đạn player
+            this.angle = 0f
+            this.bitmap = cachedBulletBitmapPlayer
+            this.active = true
+            if (!activeBullets.contains(this)) {
+                activeBullets.add(this)
+            }
+            SoundManager.playShoot()
+            Log.d("EntityManager", "Spawned player bullet at x=$x, y=$y, speed=$speed")
+        }
+    }
 
+    // Spawn coin
+    fun spawnCoin(x: Float, y: Float) {
+        coinPool.find { !it.active }?.apply {
+            this.x = x
+            this.y = y
+            this.size = coinSize
+            speed = (10..14).random().toFloat() // Tốc độ rơi của coin
+            bitmap = cachedCoinBitmap
+            active = true
+            value = 1
+            if (!activeCoins.contains(this)) {
+                activeCoins.add(this)
+            }
+        }
+    }
+
+    // Spawn hiệu ứng nổ
+    fun spawnExplosion(x: Float, y: Float, size: Int) {
+        SoundManager.playExplosion()
+        getExplosionFromPool()?.let { exp ->
+            exp.x = x
+            exp.y = y
+            exp.setFrames(explosionFrames!!, size.toFloat())
+            activeExplosions.add(exp)
+        }
+    }
+
+    // Spawn enemy ngẫu nhiên
+    private fun spawnEnemy() {
+        val screenW = gameView.screenW
+        getEnemyFromPool()?.apply {
+            x = (50..screenW - size - 50).random().toFloat()
+            y = (50..300).random().toFloat()
+            hp = DifficultyManager.EnemyDefaults.hp
+            maxHp = hp
+            speed = DifficultyManager.EnemyDefaults.speed.toFloat()
+            shotDelay = DifficultyManager.EnemyDefaults.shotDelay
+            directionX = if ((0..1).random() == 0) -1 else 1
+            activeEnemies.add(this)
+        }
+    }
+
+    // Spawn boss khi đủ số enemy bị tiêu diệt
+    private fun spawnBoss() {
+        if (!bossSpawned) {
+            getBossFromPool()?.apply {
+                x = gameView.screenW / 2f - size / 2
+                y = 100f
+                hp = DifficultyManager.BossDefaults.hp
+                maxHp = hp
+                speed = DifficultyManager.BossDefaults.speed.toFloat()
+                shotDelay = DifficultyManager.BossDefaults.shotDelay
+                active = true
+                activeEnemies.add(this)
+            }
+            bossSpawned = true
+        }
+    }
+
+    // Cập nhật trạng thái game mỗi frame
     fun update(deltaTime: Float) {
         if (!resourcesInitialized) return
         if (gameView.gameState == GameView.GameState.WIN ||
@@ -282,64 +428,66 @@ class EntityManager(private val gameView: GameView) {
         val screenH = gameView.screenH
         val screenW = gameView.screenW
 
-        // Background scroll
+        // Cập nhật vị trí background để cuộn
         bgY1 += backgroundSpeed * deltaTime * 60f
         bgY2 += backgroundSpeed * deltaTime * 60f
         if (bgY1 >= screenH) bgY1 = bgY2 - screenH
         if (bgY2 >= screenH) bgY2 = bgY1 - screenH
 
-        // Player die check — chỉ set GAME_OVER khi đang RUNNING
+        // Kiểm tra game over khi player hết HP
         if (gameView.gameState == GameView.GameState.RUNNING && gameView.player.hp <= 0) {
             Log.d("EntityManager", "Player HP <= 0 -> GAME_OVER")
             gameView.gameState = GameView.GameState.GAME_OVER
-            // không return ở đây; update() sẽ sớm early-return vì guard ở đầu hàm
         }
-
 
         val now = System.currentTimeMillis()
 
-        // Player auto-shoot
-        if (now - gameView.player.lastShot > gameView.player.shotDelay) {
-            getBulletFromPool()?.let { bullet ->
-                bullet.x = gameView.player.x + gameView.player.size / 2 - playerBulletSize / 2
-                bullet.y = gameView.player.y
-                bullet.size = playerBulletSize.toFloat()
-                bullet.speed = 30f
-                bullet.bitmap = cachedBulletBitmapPlayer
-                activeBullets.add(bullet)
+        // Xử lý bắn đạn của player
+        val player = gameView.player
+        if (System.currentTimeMillis() - player.lastShot > player.shotDelay) {
+            player.lastShot = System.currentTimeMillis()
+            val bulletX = player.x + player.size / 2f - playerBulletSize / 2f
+            val bulletY = player.y - playerBulletSize.toFloat()
+            val offset = player.size * 0.3f
+            Log.d("EntityManager", "Player position: x=${player.x}, y=${player.y}, bulletX=$bulletX, bulletY=$bulletY")
 
-                // 🔊 Âm thanh bắn
-                SoundManager.playShoot()
+            if (player.doubleShotActive && System.currentTimeMillis() < player.doubleShotEndTime) {
+                spawnBullet(bulletX - offset, bulletY)
+                spawnBullet(bulletX + offset, bulletY)
+                Log.d("EntityManager", "Double shot active, spawning two bullets")
+            } else {
+                spawnBullet(bulletX, bulletY)
             }
-            gameView.player.lastShot = now
+
+            if (player.doubleShotActive && System.currentTimeMillis() >= player.doubleShotEndTime) {
+                player.doubleShotActive = false
+                Log.d("EntityManager", "Double shot expired")
+            }
         }
 
-        // Spawn enemy
+        // Spawn enemy định kỳ
         if (now - lastEnemySpawn > 1500) {
             spawnEnemy()
             lastEnemySpawn = now
         }
 
+        // Cập nhật enemy
         val iteratorEnemy = activeEnemies.iterator()
         while (iteratorEnemy.hasNext()) {
             val e = iteratorEnemy.next()
             if (e.active) {
                 e.y += e.speed * deltaTime * 60f
                 e.x += 2f * deltaTime * 60f * e.directionX
-                // Kiểm tra va chạm với mép màn hình ngang
                 if (e.x < 0) {
                     e.x = 0f
                     e.directionX *= -1
-                    // 🔊 Âm thanh nảy khi chạm rìa
                     SoundManager.playEnemyBounce()
                 } else if (e.x + e.size > screenW) {
                     e.x = (screenW - e.size).toFloat()
                     e.directionX *= -1
-                    // 🔊 Âm thanh nảy khi chạm rìa
                     SoundManager.playEnemyBounce()
                 }
-                val maxY = (screenH * 0.66f).toInt() // enemy và boss chỉ ở nửa trên
-
+                val maxY = (screenH * 0.66f).toInt()
                 if (e.y < 0) {
                     e.y = 0f
                     e.speed = -e.speed
@@ -348,13 +496,14 @@ class EntityManager(private val gameView: GameView) {
                     e.speed = -e.speed
                 }
 
+                // Enemy bắn đạn
                 if (now - e.lastShot > e.shotDelay) {
                     getEnemyBulletFromPool()?.let { bullet ->
                         bullet.x = e.x + e.size / 2 - enemyBulletSize / 2
                         bullet.y = e.y + e.size
                         bullet.size = enemyBulletSize.toFloat()
-                        bullet.speed = 15f
-                        bullet.angle = 90f
+                        bullet.speed = 15f // Tốc độ đạn enemy
+                        bullet.angle = 0f // Không dùng angle, nhưng set để nhất quán
                         bullet.bitmap = cachedBulletBitmapEnemy
                         activeEnemyBullets.add(bullet)
                     }
@@ -368,21 +517,22 @@ class EntityManager(private val gameView: GameView) {
             }
         }
 
-        // ✅ FIX: Sửa điều kiện spawn boss để phù hợp với goal từ DifficultyManager
+        // Spawn boss khi đủ số enemy bị tiêu diệt
         if (!bossSpawned && enemiesKilled >= goal) spawnBoss()
 
+        // Cập nhật đạn player (di chuyển lên trên)
         activeBullets.removeAll { bullet ->
             bullet.y -= bullet.speed * deltaTime * 60f
             bullet.y < -bullet.size
         }
 
+        // Cập nhật đạn enemy (di chuyển xuống dưới)
         activeEnemyBullets.removeAll { bullet ->
-            bullet.x += (kotlin.math.cos(Math.toRadians(bullet.angle.toDouble())) * bullet.speed * deltaTime * 60f).toFloat()
-            bullet.y += (kotlin.math.sin(Math.toRadians(bullet.angle.toDouble())) * bullet.speed * deltaTime * 60f).toFloat()
-            bullet.y > screenH + bullet.size || bullet.x < -bullet.size || bullet.x > screenW + bullet.size
+            bullet.y += bullet.speed * deltaTime * 60f
+            bullet.y > screenH + bullet.size
         }
 
-        // Update coin position (chỉ rơi, không check player)
+        // Cập nhật coin (rơi từ trên xuống)
         activeCoins.forEach { coin ->
             if (coin.active) {
                 coin.y += coin.speed * deltaTime * 60f
@@ -393,13 +543,13 @@ class EntityManager(private val gameView: GameView) {
         }
         activeCoins.removeAll { !it.active }
 
-        // ✅ Spawn FallingObject ngẫu nhiên
-        if ((0..1000).random() < 5) {
+        // Spawn falling object ngẫu nhiên
+        if ((0..1000).random() < 5) { // Xác suất ~0.5%, ~1 falling object mỗi 3.34 giây
             spawnFallingObject()
             SoundManager.playFallingHit()
         }
 
-        // ✅ Update FallingObject với việc xoá khỏi pool khi inactive
+        // Cập nhật falling object (rơi từ trên xuống)
         activeFallingObjects.removeAll { obj ->
             if (obj.active) {
                 obj.y += obj.speed * deltaTime * 60f
@@ -408,75 +558,51 @@ class EntityManager(private val gameView: GameView) {
                     true
                 } else false
             } else {
-                true // Xóa objects không active
+                true
             }
         }
-        // ✅ Update Explosions
+
+        // Spawn power-up ngẫu nhiên
+        if ((0..200).random() < 1) { // Xác suất ~0.5%, ~1 power-up mỗi 3.36 giây
+            spawnPowerUp()
+        }
+
+        // Cập nhật power-up (rơi từ trên xuống)
+        activePowerUps.removeAll { pu ->
+            if (pu.active) {
+                pu.y += pu.speed * deltaTime * 60f
+                if (pu.y > gameView.screenH) {
+                    pu.active = false
+                    true
+                } else false
+            } else true
+        }
+
+        // Cập nhật hiệu ứng nổ
         activeExplosions.removeAll { exp ->
             if (exp.active) {
                 exp.update(deltaTime)
-                false // vẫn còn active, giữ lại
+                false
             } else {
-                true  // inactive thì remove
+                true
             }
         }
     }
 
-    private fun spawnEnemy() {
+    // Spawn falling object
+    private fun spawnFallingObject() {
         val screenW = gameView.screenW
-        getEnemyFromPool()?.apply {
-            x = (50..screenW - size - 50).random().toFloat()
-            y = (50..300).random().toFloat()
-            hp = DifficultyManager.EnemyDefaults.hp
-            maxHp = hp
-            speed = DifficultyManager.EnemyDefaults.speed.toFloat()
-            shotDelay = DifficultyManager.EnemyDefaults.shotDelay // ✅ FIX: Thêm dòng này
-            directionX = if ((0..1).random() == 0) -1 else 1
-            activeEnemies.add(this)
-        }
-    }
-
-    private fun spawnBoss() {
-        if (!bossSpawned) {
-            getBossFromPool()?.apply {
-                x = gameView.screenW / 2f - size / 2
-                y = 100f
-                hp = DifficultyManager.BossDefaults.hp
-                maxHp = hp
-                speed = DifficultyManager.BossDefaults.speed.toFloat()
-                shotDelay = DifficultyManager.BossDefaults.shotDelay // ✅ FIX: Thêm dòng này
-                active = true
-                activeEnemies.add(this)
-            }
-            bossSpawned = true
-        }
-    }
-    fun spawnExplosion(x: Float, y: Float, size: Int) {
-        SoundManager.playExplosion()
-        getExplosionFromPool()?.let { exp ->
-            exp.x = x
-            exp.y = y
-            exp.setFrames(explosionFrames!!, size.toFloat()) // ✅ Truyền frames gốc + size
-            activeExplosions.add(exp)
-        }
-    }
-
-
-
-    fun spawnCoin(x: Float, y: Float) {
-        coinPool.find { !it.active }?.apply {
-            this.x = x
-            this.y = y
-            this.size = coinSize        // ✅ thêm dòng này
-            speed = (8..12).random().toFloat()
-            bitmap = cachedCoinBitmap
+        fallingObjectPool.find { !it.active }?.apply {
+            x = (0..(screenW - size)).random().toFloat()
+            y = -size.toFloat() // Spawn ngoài đỉnh màn hình
+            speed = (10..16).random().toFloat() // Tốc độ rơi ngẫu nhiên
+            bitmap = cachedFallingBitmap
             active = true
-            value = 1
-            if (!activeCoins.contains(this)) {
-                activeCoins.add(this)
-            }
+            activeFallingObjects.add(this)
         }
     }
+
+    // Xử lý thao tác chạm để di chuyển player
     fun handleTouch(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
@@ -487,14 +613,12 @@ class EntityManager(private val gameView: GameView) {
                 )
                 if (rect.contains(event.x, event.y)) {
                     isDraggingPlayer = true
-                    //SoundManager.playPlayerThruster() // 🚀 bắt đầu engine
                 }
             }
             MotionEvent.ACTION_MOVE -> {
                 if (isDraggingPlayer) {
                     var newX = event.x - gameView.player.size / 2
                     var newY = event.y - gameView.player.size / 2
-
                     if (newX < 0) {
                         newX = 0f
                         SoundManager.playEnemyBounce()
@@ -507,7 +631,6 @@ class EntityManager(private val gameView: GameView) {
                         newX = (gameView.screenW - gameView.player.size).toFloat()
                         SoundManager.playEnemyBounce()
                     }
-
                     if (newY > gameView.screenH - gameView.player.size) {
                         newY = (gameView.screenH - gameView.player.size).toFloat()
                         SoundManager.playEnemyBounce()
@@ -515,24 +638,25 @@ class EntityManager(private val gameView: GameView) {
                     gameView.player.x = newX
                     gameView.player.y = newY
                 }
-
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 isDraggingPlayer = false
-                //SoundManager.stopPlayerThruster() // 🚀 tắt engine
             }
         }
         return true
     }
 
+    // Lấy background và tọa độ
     fun getBackground(): Bitmap? = scaledBackground
     fun getBgY1() = bgY1
     fun getBgY2() = bgY2
 
+    // Tăng số enemy bị tiêu diệt
     fun increaseEnemiesKilled() {
         enemiesKilled++
     }
 
+    // Tính toán sample size để scale bitmap
     private fun calculateInSampleSize(options: Options, reqWidth: Int, reqHeight: Int): Int {
         val (height: Int, width: Int) = options.outHeight to options.outWidth
         var inSampleSize = 1
@@ -546,29 +670,26 @@ class EntityManager(private val gameView: GameView) {
         return inSampleSize
     }
 
+    // Reset trạng thái game
     fun reset(screenW: Int, screenH: Int) {
         activeBullets.clear()
         activeEnemyBullets.clear()
         activeEnemies.clear()
-        // ✅ Reset FallingObject
         activeFallingObjects.clear()
-
+        activePowerUps.clear()
+        powerUpPool.forEach { it.active = false }
         activeExplosions.clear()
         explosionPool.forEach { it.active = false }
-
-        bulletPool.forEach { it.active = false }
-        enemyBulletPool.forEach { it.active = false }
+        bulletPool.forEach { it.active = false; it.speed = 0f; it.angle = 0f }
+        enemyBulletPool.forEach { it.active = false; it.speed = 0f; it.angle = 0f }
         enemyPool.forEach { it.active = false }
         bossPool.forEach { it.active = false }
-        fallingObjectPool.forEach { it.active = false }
-
+        fallingObjectPool.forEach { it.active = false; it.speed = 12f }
         bossSpawned = false
         enemiesKilled = 0
         lastEnemySpawn = 0
-
         bgY1 = 0f
         bgY2 = -screenH.toFloat()
-
         gameView.player.reset(screenW, screenH)
     }
 }

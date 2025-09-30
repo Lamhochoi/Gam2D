@@ -68,7 +68,7 @@ open class GameView @JvmOverloads constructor(
 
     private var overlayStartTime = 0L
 
-    private val skullBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.ic_skull) }
+    private val skullBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.you_lose) }
     private val trophyBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.ic_trophy) }
     private val pauseBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.ic_pause_bg) }
     private var scaledPause: Bitmap? = null
@@ -89,7 +89,7 @@ open class GameView @JvmOverloads constructor(
         DifficultyManager.apply("MARS", this)
         gameLoop = GameLoop(this, holder).apply { startLoop() }
 
-        val iconSize = (screenW * 0.6f).toInt()
+        val iconSize = (screenW * 0.4f).toInt()
         scaledSkull = Bitmap.createScaledBitmap(skullBitmap, iconSize, iconSize, true)
         scaledTrophy = Bitmap.createScaledBitmap(trophyBitmap, iconSize, iconSize, true)
         scaledPause = Bitmap.createScaledBitmap(pauseBitmap, iconSize, iconSize, true)
@@ -178,12 +178,18 @@ open class GameView @JvmOverloads constructor(
     }
 
     fun onPlayerHit(damage: Int = 1) {
-        player.hp -= damage
-        lastHitTime = System.currentTimeMillis()
-        vibrate(120)
-        if (player.hp <= 0 && gameState == GameState.RUNNING) {
-            Log.d("GameView", "Player died -> GAME_OVER")
-            gameState = GameState.GAME_OVER
+        if (player.shield > 0) {
+            player.shield -= damage
+            if (player.shield < 0) player.shield = 0
+            vibrate(50)  // Rung nhẹ hơn nếu có shield
+        } else {
+            player.hp -= damage
+            lastHitTime = System.currentTimeMillis()
+            vibrate(120)
+            if (player.hp <= 0 && gameState == GameState.RUNNING) {
+                Log.d("GameView", "Player died -> GAME_OVER")
+                gameState = GameState.GAME_OVER
+            }
         }
     }
 
@@ -313,10 +319,10 @@ open class GameView @JvmOverloads constructor(
         // --- Button tùy theo state ---
         if (gameState == GameState.GAME_OVER || gameState == GameState.WIN) {
             btnRestartRect?.let { drawButton(it, "▶ Chơi lại") }
-            btnMenuRect?.let { drawButton(it, "☰ Menu") }
+            btnMenuRect?.let { drawButton(it, "☰ Home") }
         } else if (gameState == GameState.PAUSED) {
             btnRestartRect?.let { drawButton(it, "▶ Tiếp tục") }
-            btnMenuRect?.let { drawButton(it, "☰ Menu") }
+            btnMenuRect?.let { drawButton(it, "☰ Home") }
         }
     }
 

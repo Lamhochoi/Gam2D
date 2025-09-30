@@ -45,6 +45,13 @@ class Renderer(private val gameView: GameView) {
         drawBossHp(canvas)
         drawFPS(canvas)
         drawScore(canvas)
+        drawPowerUps(canvas)
+    }
+    private fun drawPowerUps(canvas: Canvas) {
+        val manager = gameView.entityManager
+        manager.activePowerUps.forEach { pu ->
+            pu.bitmap?.let { canvas.drawBitmap(it, pu.x, pu.y, null) }
+        }
     }
     private fun drawCoins(canvas: Canvas) {
         val manager = gameView.entityManager
@@ -75,6 +82,15 @@ class Renderer(private val gameView: GameView) {
     private fun drawPlayer(canvas: Canvas) {
         val p = gameView.player
         p.bitmap?.let { canvas.drawBitmap(it, p.x, p.y, null) }
+
+        if (p.shield > 0) {
+            val shieldPaint = Paint().apply {
+                color = Color.argb(100, 0, 255, 255)  // Xanh dương mờ
+                style = Paint.Style.STROKE
+                strokeWidth = 10f
+            }
+            canvas.drawCircle(p.x + p.size / 2f, p.y + p.size / 2f, p.size / 1.5f, shieldPaint)
+        }
     }
 
     private fun drawEnemies(canvas: Canvas) {
@@ -213,46 +229,46 @@ class Renderer(private val gameView: GameView) {
     }
 
 
-private fun drawFPS(canvas: Canvas) {
-    val fps = gameView.currentFPS
-    val text = "FPS: $fps"
+    private fun drawFPS(canvas: Canvas) {
+        val fps = gameView.currentFPS
+        val text = "FPS: $fps"
 
-    val padding = 20f
-    val x = 40f
-    val y = 250f
+        val padding = 20f
+        val x = 40f
+        val y = 250f
 
-    fpsPaint.apply {
-        color = Color.GREEN
-        textSize = 50f
-        isAntiAlias = true
-        setShadowLayer(10f, 0f, 0f, Color.BLACK)
-        typeface = Typeface.MONOSPACE
+        fpsPaint.apply {
+            color = Color.GREEN
+            textSize = 50f
+            isAntiAlias = true
+            setShadowLayer(10f, 0f, 0f, Color.BLACK)
+            typeface = Typeface.MONOSPACE
+        }
+
+        // Tính kích thước text để vẽ nền
+        val bounds = Rect()
+        fpsPaint.getTextBounds(text, 0, text.length, bounds)
+
+        val bgLeft = x - padding
+        val bgTop = y + bounds.top - padding
+        val bgRight = x + bounds.width() + padding
+        val bgBottom = y + bounds.bottom + padding
+
+        val bgPaint = Paint().apply {
+            color = Color.argb(150, 20, 20, 20) // nền đen mờ
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+
+        // Vẽ nền bo tròn
+        canvas.drawRoundRect(
+            RectF(bgLeft, bgTop, bgRight, bgBottom),
+            20f, 20f, bgPaint
+        )
+
+        // Vẽ chữ FPS
+        canvas.drawText(text, x, y, fpsPaint)
     }
-
-    // Tính kích thước text để vẽ nền
-    val bounds = Rect()
-    fpsPaint.getTextBounds(text, 0, text.length, bounds)
-
-    val bgLeft = x - padding
-    val bgTop = y + bounds.top - padding
-    val bgRight = x + bounds.width() + padding
-    val bgBottom = y + bounds.bottom + padding
-
-    val bgPaint = Paint().apply {
-        color = Color.argb(150, 20, 20, 20) // nền đen mờ
-        style = Paint.Style.FILL
-        isAntiAlias = true
-    }
-
-    // Vẽ nền bo tròn
-    canvas.drawRoundRect(
-        RectF(bgLeft, bgTop, bgRight, bgBottom),
-        20f, 20f, bgPaint
-    )
-
-    // Vẽ chữ FPS
-    canvas.drawText(text, x, y, fpsPaint)
-}
 
     // Vẽ Score với hộp nền đẹp
     private fun drawScore(canvas: Canvas) {

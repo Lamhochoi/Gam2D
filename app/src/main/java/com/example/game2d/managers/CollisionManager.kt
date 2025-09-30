@@ -5,6 +5,8 @@ import android.graphics.RectF
 import com.example.game2d.core.GameView
 import com.example.game2d.entities.Enemy
 import com.example.game2d.entities.FallingObject
+import com.example.game2d.entities.PowerUp
+import com.example.game2d.entities.PowerUpType
 
 class CollisionManager(private val gameView: GameView) {
 
@@ -13,6 +15,8 @@ class CollisionManager(private val gameView: GameView) {
     private val enemyRect = RectF()
     private val playerRect = RectF()
     private val fallingRect = RectF()
+
+    private val powerUpRect = RectF()
 
     fun checkCollisions() {
         val entityManager = gameView.entityManager
@@ -114,6 +118,39 @@ class CollisionManager(private val gameView: GameView) {
                     f.active = false
                     gameView.onPlayerHit(1)
                 }
+            }
+        }
+
+        // PowerUp → Player
+        entityManager.activePowerUps.forEach { pu: PowerUp ->
+            if (pu.active) {
+                playerRect.set(
+                    gameView.player.x, gameView.player.y,
+                    gameView.player.x + gameView.player.size,
+                    gameView.player.y + gameView.player.size
+                )
+                powerUpRect.set(pu.x, pu.y, pu.x + pu.size, pu.y + pu.size)
+
+                if (RectF.intersects(playerRect, powerUpRect)) {
+                    pu.active = false
+                    applyPowerUpEffect(pu.type)
+                    //SoundManager.playPowerUp()  // Giả sử bạn thêm hàm này vào SoundManager
+                }
+            }
+        }
+    }
+    private fun applyPowerUpEffect(type: PowerUpType) {
+        val player = gameView.player
+        when (type) {
+            PowerUpType.HEAL -> {
+                player.hp = minOf(player.hp + 2, player.maxHp)  // Hồi 2 HP, không vượt max
+            }
+            PowerUpType.SHIELD -> {
+                player.shield = 3  // Lá chắn chịu 3 damage
+            }
+            PowerUpType.DOUBLE_SHOT -> {
+                player.doubleShotActive = true
+                player.doubleShotEndTime = System.currentTimeMillis() + 10000  // 10 giây
             }
         }
     }
