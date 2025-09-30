@@ -15,7 +15,9 @@ data class Player(
     // Thêm mới cho power-ups
     var shield: Int = 0,  // Lá chắn: số lượng damage có thể chịu (ví dụ 3)
     var doubleShotActive: Boolean = false,
-    var doubleShotEndTime: Long = 0
+    var doubleShotEndTime: Long = 0,
+    var isInvincible: Boolean = false,
+    var invincibilityEndTime: Long = 0
 ) {
     fun reset(screenW: Int, screenH: Int) {
         hp = maxHp
@@ -26,5 +28,7 @@ data class Player(
         shield = 0
         doubleShotActive = false
         doubleShotEndTime = 0
+        isInvincible = false
+        invincibilityEndTime = 0
     }
 }

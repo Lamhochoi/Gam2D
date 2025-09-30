@@ -3,7 +3,7 @@ package com.example.game2d.entities
 import android.graphics.Bitmap
 
 enum class PowerUpType {
-    HEAL, SHIELD, DOUBLE_SHOT
+    HEAL, SHIELD, DOUBLE_SHOT, INVINCIBILITY
 }
 
 data class PowerUp(

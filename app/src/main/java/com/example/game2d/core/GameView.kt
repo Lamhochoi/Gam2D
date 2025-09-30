@@ -160,6 +160,9 @@ open class GameView @JvmOverloads constructor(
         if (gameState == GameState.RUNNING) {
             entityManager.update(deltaTime)
             collisionManager.checkCollisions()
+            if (player.isInvincible && System.currentTimeMillis() >= player.invincibilityEndTime) {
+                player.isInvincible = false
+            }
         }
     }
 
@@ -178,6 +181,7 @@ open class GameView @JvmOverloads constructor(
     }
 
     fun onPlayerHit(damage: Int = 1) {
+        if (player.isInvincible) return
         if (player.shield > 0) {
             player.shield -= damage
             if (player.shield < 0) player.shield = 0

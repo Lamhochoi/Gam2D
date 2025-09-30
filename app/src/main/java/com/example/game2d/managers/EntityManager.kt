@@ -56,9 +56,11 @@ class EntityManager(private val gameView: GameView) {
     private var healBitmap: Bitmap? = null
     private var shieldBitmap: Bitmap? = null
     private var doubleShotBitmap: Bitmap? = null
+    private var invincibilityBitmap: Bitmap? = null
     private var cachedHealBitmap: Bitmap? = null
     private var cachedShieldBitmap: Bitmap? = null
     private var cachedDoubleShotBitmap: Bitmap? = null
+    private var cachedInvincibilityBitmap: Bitmap? = null
     private var powerUpSize: Int = 0
 
     // Trạng thái đã spawn boss chưa
@@ -129,10 +131,12 @@ class EntityManager(private val gameView: GameView) {
         healBitmap = BitmapFactory.decodeResource(res, R.drawable.health_pack)
         shieldBitmap = BitmapFactory.decodeResource(res, R.drawable.shield_pack)
         doubleShotBitmap = BitmapFactory.decodeResource(res, R.drawable.double_shot)
+        invincibilityBitmap = BitmapFactory.decodeResource(res, R.drawable.invincibility_pack)
         powerUpSize = (screenW * 0.06f * GameView.SCALE_FACTOR).toInt()
         cachedHealBitmap = Bitmap.createScaledBitmap(healBitmap!!, powerUpSize, powerUpSize, false)
         cachedShieldBitmap = Bitmap.createScaledBitmap(shieldBitmap!!, powerUpSize, powerUpSize, false)
         cachedDoubleShotBitmap = Bitmap.createScaledBitmap(doubleShotBitmap!!, powerUpSize, powerUpSize, false)
+        cachedInvincibilityBitmap = Bitmap.createScaledBitmap(invincibilityBitmap!!, powerUpSize, powerUpSize, false)
 
         initPowerUpPool(10)
 
@@ -330,6 +334,7 @@ class EntityManager(private val gameView: GameView) {
                 PowerUpType.HEAL -> cachedHealBitmap
                 PowerUpType.SHIELD -> cachedShieldBitmap
                 PowerUpType.DOUBLE_SHOT -> cachedDoubleShotBitmap
+                PowerUpType.INVINCIBILITY -> cachedInvincibilityBitmap
             }
             active = true
             activePowerUps.add(this)

@@ -98,7 +98,9 @@ class CollisionManager(private val gameView: GameView) {
             bulletRect.set(b.x, b.y, b.x + b.size, b.y + b.size)
 
             if (RectF.intersects(playerRect, bulletRect)) {
-                gameView.onPlayerHit(1)
+                if (!gameView.player.isInvincible) {
+                    gameView.onPlayerHit(1)
+                }
                 b.active = false
                 true
             } else false
@@ -115,8 +117,10 @@ class CollisionManager(private val gameView: GameView) {
                 fallingRect.set(f.x, f.y, f.x + f.size, f.y + f.size)
 
                 if (RectF.intersects(playerRect, fallingRect)) {
+                    if (!gameView.player.isInvincible) {
+                        gameView.onPlayerHit(1)
+                    }
                     f.active = false
-                    gameView.onPlayerHit(1)
                 }
             }
         }
@@ -151,6 +155,10 @@ class CollisionManager(private val gameView: GameView) {
             PowerUpType.DOUBLE_SHOT -> {
                 player.doubleShotActive = true
                 player.doubleShotEndTime = System.currentTimeMillis() + 10000  // 10 giây
+            }
+            PowerUpType.INVINCIBILITY -> {
+                player.isInvincible = true
+                player.invincibilityEndTime = System.currentTimeMillis() + 2000
             }
         }
     }

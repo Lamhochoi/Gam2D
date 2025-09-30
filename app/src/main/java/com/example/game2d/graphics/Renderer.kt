@@ -81,7 +81,15 @@ class Renderer(private val gameView: GameView) {
 
     private fun drawPlayer(canvas: Canvas) {
         val p = gameView.player
-        p.bitmap?.let { canvas.drawBitmap(it, p.x, p.y, null) }
+        p.bitmap?.let { bmp ->
+            if (p.isInvincible) {
+                val paint = Paint()
+                paint.alpha = 128
+                canvas.drawBitmap(bmp, p.x, p.y, paint)
+            } else {
+                canvas.drawBitmap(bmp, p.x, p.y, null)
+            }
+        }
 
         if (p.shield > 0) {
             val shieldPaint = Paint().apply {
