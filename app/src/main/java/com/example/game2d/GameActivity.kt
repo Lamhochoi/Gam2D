@@ -64,6 +64,13 @@ class GameActivity : AppCompatActivity() {
             }
         }
 
+        gameView.onLeaderboard = {
+            runOnUiThread {
+                val intent = Intent(this, LeaderboardActivity::class.java)
+                startActivity(intent)
+            }
+        }
+
         btnMusic = findViewById(R.id.btnMusic)
         btnSound = findViewById(R.id.btnSound)
         btnPause = findViewById(R.id.btnPause)
@@ -146,7 +153,7 @@ class GameActivity : AppCompatActivity() {
                 PlayerDataManager.addCoins(this, earned)
                 val newTotal = PlayerDataManager.getCoins(this)
                 Log.d("GameActivity", "Saved: newTotal=$newTotal")
-                PlayerDataManager.debugPrefs(this) // In SharedPreferences
+                PlayerDataManager.debugPrefs(this)
             } else {
                 Log.d("GameActivity", "No coins to save")
             }

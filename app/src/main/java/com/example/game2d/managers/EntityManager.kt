@@ -177,7 +177,7 @@ class EntityManager(private val gameView: GameView) {
             val matrix = Matrix().apply { postRotate(0f) } // Đạn player hướng lên (giả sử bullet5.png đã đúng hướng)
             Bitmap.createBitmap(it, 0, 0, it.width, it.height, matrix, true)
         }
-        enemyBulletSize = (screenW * 0.04f * GameView.SCALE_FACTOR).toInt()
+        enemyBulletSize = (screenW * 0.05f * GameView.SCALE_FACTOR).toInt()
         cachedBulletBitmapEnemy = Bitmap.createScaledBitmap(bulletBitmap!!, enemyBulletSize, enemyBulletSize, false).let {
             val matrix = Matrix().apply { postRotate(180f) } // Đạn enemy hướng xuống (giả sử bullet5.png đã đúng hướng)
             Bitmap.createBitmap(it, 0, 0, it.width, it.height, matrix, true)

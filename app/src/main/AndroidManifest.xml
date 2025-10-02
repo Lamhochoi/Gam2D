@@ -37,6 +37,7 @@
         <activity
             android:name=".GameActivity"
             android:theme="@style/Theme.Game2D" />
+        <activity android:name=".LeaderboardActivity" />
 
     </application>
 
