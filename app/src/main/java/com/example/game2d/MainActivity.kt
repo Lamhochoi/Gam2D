@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
         val btnMars = findViewById<Button>(R.id.btnEasy)
         val btnMercury = findViewById<Button>(R.id.btnMedium)
         val btnSaturn = findViewById<Button>(R.id.btnHard)
+        val btnChallenge = findViewById<Button>(R.id.btnChallenge)
         val btnAddEnergy = findViewById<ImageView>(R.id.btnAddEnergy)
         val btnAddCoin = findViewById<ImageView>(R.id.btnAddCoin)
         val btnAddGem = findViewById<ImageView>(R.id.btnAddGem)
@@ -64,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         btnMars.setOnClickListener { tryStartGame("MARS") }
         btnMercury.setOnClickListener { tryStartGame("MERCURY") }
         btnSaturn.setOnClickListener { tryStartGame("SATURN") }
+        btnChallenge.setOnClickListener { tryStartChallenge() }
         btnShop.setOnClickListener {
             Log.d("MainActivity", "Shop button clicked")
             showShopDialog()
@@ -115,14 +117,30 @@ class MainActivity : AppCompatActivity() {
     private fun tryStartGame(planet: String) {
         if (PlayerDataManager.useEnergy(this, 1)) {
             startGame(planet)
+            tvEnergy.animate().scaleX(1.2f).scaleY(1.2f).setDuration(200).withEndAction {
+                tvEnergy.animate().scaleX(1f).scaleY(1f).setDuration(200).start()
+            }.start()
+            Toast.makeText(this, "Bắt đầu chiến đấu trên $planet!", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(this, "Không đủ Energy!", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun startGame(planet: String) {
+    private fun tryStartChallenge() {
+        if (PlayerDataManager.useEnergy(this, 5)) { // Challenge mode costs 5 energy
+            startGame("CHALLENGE")
+            tvEnergy.animate().scaleX(1.2f).scaleY(1.2f).setDuration(200).withEndAction {
+                tvEnergy.animate().scaleX(1f).scaleY(1f).setDuration(200).start()
+            }.start()
+            Toast.makeText(this, "Bắt đầu Khiêu Chiến Vũ Trụ!", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Cần 5 Energy để chơi Khiêu Chiến!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun startGame(mode: String) {
         val intent = Intent(this, GameActivity::class.java)
-        intent.putExtra("LEVEL", planet)
+        intent.putExtra("MODE", mode)
         gameLauncher.launch(intent)
     }
 
@@ -133,20 +151,17 @@ class MainActivity : AppCompatActivity() {
             .setCancelable(false)
             .create()
 
-        // Khởi tạo các view trong dialog
         val tvShopGems = dialogView.findViewById<TextView>(R.id.tvShopGems)
         val tvShopCoins = dialogView.findViewById<TextView>(R.id.tvShopCoins)
         val rvShopItems = dialogView.findViewById<RecyclerView>(R.id.rvShopItems)
         val btnCloseShop = dialogView.findViewById<Button>(R.id.btnCloseShop)
 
-        // Cập nhật số Gems và Coins
         val currentGems = PlayerDataManager.getGems(this)
         val currentCoins = PlayerDataManager.getCoins(this)
         tvShopGems.text = "Số Gems: $currentGems"
         tvShopCoins.text = "Số Coins: $currentCoins"
         Log.d("MainActivity", "Showing shop dialog, gems=$currentGems, coins=$currentCoins")
 
-        // Danh sách vật phẩm
         val shopItems = listOf(
             ShopItem("10 Energy", 10, 5, 50, R.drawable.energy, "GEMS"),
             ShopItem("30 Energy", 30, 12, 120, R.drawable.energy, "GEMS"),
@@ -155,7 +170,6 @@ class MainActivity : AppCompatActivity() {
             ShopItem("50 Gems", 50, 0, 500, R.drawable.gem, "COINS")
         )
 
-        // Thiết lập RecyclerView
         rvShopItems.layoutManager = LinearLayoutManager(this)
         rvShopItems.addItemDecoration(DividerItemDecoration(this, LinearLayoutManager.VERTICAL))
         rvShopItems.adapter = ShopItemAdapter(shopItems) { item ->
@@ -167,16 +181,15 @@ class MainActivity : AppCompatActivity() {
             }
             tvShopGems.text = "Số Gems: ${PlayerDataManager.getGems(this)}"
             tvShopCoins.text = "Số Coins: ${PlayerDataManager.getCoins(this)}"
+            loadPlayerData()
             dialog.dismiss()
         }
 
-        // Nút đóng
         btnCloseShop.setOnClickListener {
             Log.d("MainActivity", "Shop dialog closed")
             dialog.dismiss()
         }
 
-        // Bo góc Dialog
         dialog.window?.setBackgroundDrawableResource(R.drawable.shop_dialog_bg)
         dialog.show()
     }

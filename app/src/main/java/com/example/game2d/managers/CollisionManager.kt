@@ -8,7 +8,7 @@ import com.example.game2d.entities.FallingObject
 import com.example.game2d.entities.PowerUp
 import com.example.game2d.entities.PowerUpType
 
-class CollisionManager(private val gameView: GameView) {
+open class CollisionManager(private val gameView: GameView) {
 
     // Reusable rects to avoid per-check allocations
     private val bulletRect = RectF()
@@ -18,7 +18,7 @@ class CollisionManager(private val gameView: GameView) {
 
     private val powerUpRect = RectF()
 
-    fun checkCollisions() {
+    open fun checkCollisions() {
         val entityManager = gameView.entityManager
 
         // Coin → Player

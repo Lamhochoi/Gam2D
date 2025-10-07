@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
 
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -36,8 +38,14 @@
         <!-- Màn hình gameplay -->
         <activity
             android:name=".GameActivity"
+            android:launchMode="singleTop"
+            android:exported="false"
             android:theme="@style/Theme.Game2D" />
         <activity android:name=".LeaderboardActivity" />
+
+        <!-- Thêm Activity mới -->
+        <activity android:name=".ChallengeGameActivity" />
+        <activity android:name=".ChallengeLeaderboardActivity" />
 
     </application>
 

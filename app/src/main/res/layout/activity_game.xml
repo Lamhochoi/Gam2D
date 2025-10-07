@@ -8,13 +8,13 @@
     <!-- TextView hiển thị số coin -->
     <TextView
         android:id="@+id/tvCoin"
-        android:layout_width="wrap_content"
+        android:layout_width="47dp"
         android:layout_height="wrap_content"
-        android:text="0"
-        android:textSize="24sp"
-        android:textColor="#FFFF00"
+        android:layout_gravity="top|end"
         android:layout_margin="16dp"
-        android:layout_gravity="top|end"/>
+        android:text="0"
+        android:textColor="#FFFF00"
+        android:textSize="24sp" />
 
     <!-- Nút cài đặt (trái, trên cùng) -->
     <ImageButton
@@ -22,7 +22,7 @@
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_gravity="top|start"
-        android:layout_marginTop="130dp"
+        android:layout_marginTop="150dp"
         android:layout_marginStart="16dp"
         android:background="@android:color/transparent"
         android:src="@drawable/setting"

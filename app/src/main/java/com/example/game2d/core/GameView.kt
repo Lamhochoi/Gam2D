@@ -31,16 +31,19 @@ open class GameView @JvmOverloads constructor(
 
     var lastHitTime: Long = 0L
     var tvCoin: TextView? = null
-    private var gameStartTime: Long = 0L // Thời gian bắt đầu trận
-    private var gameEndTime: Long? = null // Thời gian kết thúc trận
-    private val sharedPrefs: SharedPreferences = context.getSharedPreferences("leaderboard", Context.MODE_PRIVATE)
+    protected var gameStartTime: Long = 0L // Thời gian bắt đầu trận
+    protected var gameEndTime: Long? = null // Thời gian kết thúc trận
+    protected val sharedPrefs: SharedPreferences = context.getSharedPreferences("leaderboard", Context.MODE_PRIVATE)
+    protected var pausedTime: Long = 0L  // Thời gian chơi đã tích lũy đến lúc pause (ms)
 
     companion object {
         const val SCALE_FACTOR = 2f
     }
     var onGameEnd: (() -> Unit)? = null
     var onLeaderboard: (() -> Unit)? = null
-    var gameState = GameState.RUNNING
+
+
+    open var gameState = GameState.RUNNING
         set(value) {
             field = value
             if (value == GameState.GAME_OVER || value == GameState.WIN) {
@@ -59,14 +62,14 @@ open class GameView @JvmOverloads constructor(
         }
 
     val player = Player()
-    private var gameLoop: GameLoop? = null
+    protected var gameLoop: GameLoop? = null
 
     val currentFPS: Int
         get() = gameLoop?.currentFPS ?: 0
 
-    val entityManager = EntityManager(this)
-    val collisionManager = CollisionManager(this)
-    val renderer = Renderer(this)
+    open val entityManager = EntityManager(this)
+    open val collisionManager = CollisionManager(this)
+    open val renderer = Renderer(this)
 
     var onBackToMenu: (() -> Unit)? = null
     var onRestart: (() -> Unit)? = null
@@ -74,30 +77,31 @@ open class GameView @JvmOverloads constructor(
     var screenW = 0
     var screenH = 0
 
-    private var btnMenuRect: RectF? = null
-    private var btnRestartRect: RectF? = null
-    private var btnLeaderboardRect: RectF? = null
+    protected var btnMenuRect: RectF? = null
+    protected var btnRestartRect: RectF? = null
+    protected var btnLeaderboardRect: RectF? = null
 
-    private var overlayStartTime = 0L
+    protected var overlayStartTime = 0L
 
-    private val skullBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.you_lose) }
-    private val trophyBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.congratulations) }
-    private val pauseBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.ic_pause_bg) }
-    private var scaledPause: Bitmap? = null
-    private var scaledSkull: Bitmap? = null
-    private var scaledTrophy: Bitmap? = null
+    protected val skullBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.you_lose) }
+    protected val trophyBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.congratulations) }
+    protected val pauseBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.ic_pause_bg) }
+    protected var scaledPause: Bitmap? = null
+    protected var scaledSkull: Bitmap? = null
+    protected var scaledTrophy: Bitmap? = null
 
     init {
         holder.addCallback(this)
-        MusicManager.init(context)
+        MusicManager.init(context) // Khởi tạo nhạc
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
-        screenW = holder.surfaceFrame.width()
+        screenW = holder.surfaceFrame.width() //Lấy kích thước màn hình
         screenH = holder.surfaceFrame.height()
         entityManager.initResources(screenW, screenH)
         DifficultyManager.apply("MARS", this)
-        gameLoop = GameLoop(this, holder).apply { startLoop() }
+        gameLoop = GameLoop(this, holder).apply { startLoop() } // Tạo và chạy vòng lặp game
+
         // Khôi phục trạng thái nếu gameState là WIN
         if (gameState == GameState.WIN) {
             gameEndTime = sharedPrefs.getLong("last_game_end_time", 0L)
@@ -115,6 +119,7 @@ open class GameView @JvmOverloads constructor(
         scaledTrophy = Bitmap.createScaledBitmap(trophyBitmap, iconSize, iconSize, true)
         scaledPause = Bitmap.createScaledBitmap(pauseBitmap, iconSize, iconSize, true)
 
+        // Tính toán vị trí nút bấm
         val btnWidth = screenW * 0.5f
         val btnHeight = 150f
         val centerX = screenW / 2f
@@ -145,9 +150,9 @@ open class GameView @JvmOverloads constructor(
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
-        gameLoop?.stopLoop()
-        SoundManager.release()
-        MusicManager.pause()
+        gameLoop?.stopLoop() //Dừng vòng lặp
+        SoundManager.release() // Giải phóng âm thanh
+        MusicManager.pause() //Tạm dừng nhạc
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
@@ -189,13 +194,14 @@ open class GameView @JvmOverloads constructor(
     fun update(deltaTime: Float) {
         if (gameState == GameState.RUNNING) {
             entityManager.update(deltaTime)
-            collisionManager.checkCollisions()
+            collisionManager.checkCollisions() //Kiểm tra va chạm
             if (player.isInvincible && System.currentTimeMillis() >= player.invincibilityEndTime) {
-                player.isInvincible = false
+                player.isInvincible = false //Kết thúc bất tử
             }
         }
     }
 
+    //Xử lý rung thiết bị
     fun vibrate(duration: Long = 100) {
         val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         if (vibrator.hasVibrator()) {
@@ -219,7 +225,7 @@ open class GameView @JvmOverloads constructor(
         } else {
             player.hp -= damage
             lastHitTime = System.currentTimeMillis()
-            vibrate(120)
+            vibrate(100)
             if (player.hp <= 0 && gameState == GameState.RUNNING) {
                 Log.d("GameView", "Player died -> GAME_OVER")
                 gameState = GameState.GAME_OVER
@@ -227,7 +233,7 @@ open class GameView @JvmOverloads constructor(
         }
     }
 
-    fun getGameTime(): Long {
+    open fun getGameTime(): Long {
         return if (gameState == GameState.WIN || gameState == GameState.GAME_OVER) {
             gameEndTime?.minus(gameStartTime) ?: 0L // Trả về thời gian cố định khi trận kết thúc
         } else {
@@ -235,7 +241,8 @@ open class GameView @JvmOverloads constructor(
         }
     }
 
-    private fun saveGameTime(time: Long) {
+    //Lưu thời gian
+    open fun saveGameTime(time: Long) {
         val editor = sharedPrefs.edit()
         val topTimes = sharedPrefs.getString("top_times", "")?.split(",")?.mapNotNull { it.toLongOrNull() }?.toMutableList() ?: mutableListOf()
         topTimes.add(time)
@@ -246,13 +253,17 @@ open class GameView @JvmOverloads constructor(
         Log.d("GameView", "Saved time: $time ms, topTimes: $topTimes")
     }
 
-    fun getTopTimes(): List<Long> {
+    open fun getTopTimes(): List<Long> {
         return sharedPrefs.getString("top_times", "")?.split(",")?.mapNotNull { it.toLongOrNull() } ?: emptyList()
     }
+    open fun onLeaderboard() {
+        // Override in subclasses
+    }
 
+    //Vẽ game
     fun render(canvas: Canvas) {
         Log.v("GameView", "render(): state=$gameState")
-        renderer.draw(canvas)
+        renderer.draw(canvas) // Vẽ chính
         if (System.currentTimeMillis() - lastHitTime < 150) {
             val flashPaint = Paint().apply { color = Color.argb(80, 255, 0, 0) }
             canvas.drawRect(0f, 0f, screenW.toFloat(), screenH.toFloat(), flashPaint)
@@ -265,15 +276,17 @@ open class GameView @JvmOverloads constructor(
         }
     }
 
-    private fun drawOverlay(canvas: Canvas, title: String) {
+    open fun drawOverlay(canvas: Canvas, title: String) {
         val elapsed = (System.currentTimeMillis() - overlayStartTime) / 1000f
         val customFont = ResourcesCompat.getFont(context, R.font.robotomono_bold)
 
+        //Vẽ nền đen mờ
         canvas.drawRect(
             0f, 0f, screenW.toFloat(), screenH.toFloat(),
             Paint().apply { color = Color.argb(180, 0, 0, 0) }
         )
 
+        //Vẽ banner
         val bannerWidth = screenW * 0.8f
         val bannerRect = RectF(
             screenW / 2f - bannerWidth / 2,
@@ -328,6 +341,7 @@ open class GameView @JvmOverloads constructor(
             else -> {}
         }
 
+        // Vẽ tiêu đề với hiệu ứng scale (phóng to thu nhỏ)
         val scale = 1f + 0.05f * kotlin.math.sin(elapsed * 2)
         val titlePaint = Paint().apply {
             color = Color.WHITE
@@ -344,9 +358,9 @@ open class GameView @JvmOverloads constructor(
             val leaderboardHeight = 320f
             val leaderboardRect = RectF(
                 screenW / 2f - leaderboardWidth / 2,
-                screenH / 2f + 650, // Ngay dưới nút "Bảng xếp hạng" (500 + 150)
+                screenH / 2f + 750, // Ngay dưới nút "Bảng xếp hạng" (500 + 150)
                 screenW / 2f + leaderboardWidth / 2,
-                screenH / 2f + 650 + leaderboardHeight
+                screenH / 2f + 800 + leaderboardHeight
             )
             val leaderboardBgPaint = Paint().apply {
                 shader = LinearGradient(
@@ -368,7 +382,7 @@ open class GameView @JvmOverloads constructor(
             // Vẽ tiêu đề bảng xếp hạng
             val leaderboardTitlePaint = Paint().apply {
                 color = Color.WHITE
-                textSize = screenW * 0.04f * (1f + 0.03f * kotlin.math.sin(elapsed * 3)) // Hiệu ứng phóng to
+                textSize = screenW * 0.04f * (1f + 0.04f * kotlin.math.sin(elapsed * 3)) // Hiệu ứng phóng to
                 textAlign = Paint.Align.CENTER
                 typeface = customFont
                 setShadowLayer(15f, 0f, 0f, Color.YELLOW)
@@ -413,7 +427,7 @@ open class GameView @JvmOverloads constructor(
             val milliseconds = currentTime % 1000
             val leaderboardPaint = Paint().apply {
                 color = Color.YELLOW
-                textSize = screenW * 0.055f
+                textSize = screenW * 0.040f
                 textAlign = Paint.Align.CENTER
                 typeface = customFont
                 setShadowLayer(10f, 0f, 0f, Color.BLACK)
@@ -426,6 +440,7 @@ open class GameView @JvmOverloads constructor(
             )
         }
 
+        // Vẽ nút bấm với hiệu ứng glow (alpha thay đổi)
         val glowAlpha = (128 + 127 * kotlin.math.sin(elapsed * 4)).toInt()
         val buttonBorder = Paint().apply {
             color = Color.argb(glowAlpha, 0, 255, 255)
@@ -466,12 +481,12 @@ open class GameView @JvmOverloads constructor(
         }
     }
 
-    fun pause() {
+    open fun pause() {
         gameLoop?.stopLoop()
         MusicManager.pause()
     }
 
-    fun resume() {
+    open fun resume() {
         if (gameLoop == null || !gameLoop!!.isRunning) {
             gameLoop = GameLoop(this, holder).apply { startLoop() }
         }

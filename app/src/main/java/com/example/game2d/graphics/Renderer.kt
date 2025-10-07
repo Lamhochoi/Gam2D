@@ -9,7 +9,7 @@ import com.example.game2d.entities.FallingObject
 import android.graphics.Typeface
 import android.graphics.Rect
 
-class Renderer(private val gameView: GameView) {
+open class Renderer(private val gameView: GameView) {
 
     private val enemyHpPaint = Paint().apply { color = Color.RED }
     private val playerHpPaint = Paint().apply { color = Color.GREEN }
@@ -27,7 +27,7 @@ class Renderer(private val gameView: GameView) {
         isAntiAlias = true
     }
 
-    private val timePaint = Paint().apply {
+    internal val timePaint = Paint().apply {
         color = Color.CYAN
         textSize = 50f
         isAntiAlias = true
@@ -37,7 +37,7 @@ class Renderer(private val gameView: GameView) {
     private val bossHpBackPaint = Paint().apply { color = Color.DKGRAY }
     private val bossHpPaint = Paint().apply { color = Color.MAGENTA }
 
-    fun draw(canvas: Canvas) {
+    open fun draw(canvas: Canvas) {
         drawBackground(canvas)
         drawPlayer(canvas)
         drawEnemies(canvas)
@@ -304,12 +304,12 @@ class Renderer(private val gameView: GameView) {
         canvas.drawText(text, x, y, scorePaint)
     }
 
-    private fun drawGameTime(canvas: Canvas) {
+    protected open fun drawGameTime(canvas: Canvas) {
         val timeMs = gameView.getGameTime()
         val minutes = timeMs / 60000
         val seconds = (timeMs % 60000) / 1000
         val milliseconds = timeMs % 1000
-        val text = "Time: %02d:%02d.%03d".format(minutes, seconds, milliseconds)
+        val text = "Thời Gian: %02d:%02d.%03d".format(minutes, seconds, milliseconds)
 
         val padding = 20f
         val x = 40f

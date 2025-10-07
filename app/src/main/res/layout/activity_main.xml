@@ -158,13 +158,14 @@
         android:textStyle="bold" />
 
     <!-- Menu nút chọn hành tinh -->
-    <RelativeLayout
+    <LinearLayout
         android:id="@+id/menuContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/tvTitle"
-        android:layout_marginTop="80dp"
-        android:layout_centerHorizontal="true">
+        android:layout_marginTop="50dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
         <!-- Nút Sao Hỏa -->
         <Button
@@ -177,39 +178,58 @@
             android:fontFamily="@font/robotomono_bold"
             android:textColor="@android:color/white"
             android:background="@drawable/btn_tech_m"
-            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="10dp"
             android:elevation="8dp"/>
 
-        <!-- Nút Sao Thủy -->
+        <!-- Nút Khiêu Chiến -->
         <Button
-            android:id="@+id/btnMedium"
+            android:id="@+id/btnChallenge"
             android:layout_width="130dp"
             android:layout_height="130dp"
-            android:text="SAO\nTHỦY"
-            android:textSize="22sp"
+            android:text="KHIÊU\nCHIẾN"
+            android:textSize="21sp"
             android:textStyle="bold"
             android:fontFamily="@font/robotomono_bold"
             android:textColor="@android:color/white"
-            android:background="@drawable/btn_tech"
-            android:layout_below="@id/btnEasy"
-            android:layout_toLeftOf="@id/btnEasy"
+            android:background="@drawable/btn_techc"
             android:elevation="8dp"/>
 
-        <!-- Nút Sao Thổ -->
-        <Button
-            android:id="@+id/btnHard"
-            android:layout_width="130dp"
-            android:layout_height="130dp"
-            android:layout_below="@id/btnEasy"
-            android:layout_toRightOf="@id/btnEasy"
-            android:background="@drawable/btn_tech_s"
-            android:elevation="8dp"
-            android:fontFamily="@font/robotomono_bold"
-            android:text="SAO\nTHỔ"
-            android:textColor="@android:color/white"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+        <!-- Hàng chứa Sao Thủy và Sao Thổ -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
 
-    </RelativeLayout>
+            <!-- Nút Sao Thủy -->
+            <Button
+                android:id="@+id/btnMedium"
+                android:layout_width="130dp"
+                android:layout_height="130dp"
+                android:text="SAO\nTHỦY"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/robotomono_bold"
+                android:textColor="@android:color/white"
+                android:background="@drawable/btn_tech"
+                android:layout_marginEnd="80dp"
+                android:elevation="8dp"/>
+
+            <!-- Nút Sao Thổ -->
+            <Button
+                android:id="@+id/btnHard"
+                android:layout_width="130dp"
+                android:layout_height="130dp"
+                android:background="@drawable/btn_tech_s"
+                android:elevation="8dp"
+                android:fontFamily="@font/robotomono_bold"
+                android:text="SAO\nTHỔ"
+                android:textColor="@android:color/white"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </LinearLayout>
 
 </RelativeLayout>
