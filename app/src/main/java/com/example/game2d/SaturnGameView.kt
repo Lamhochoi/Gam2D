@@ -17,5 +17,9 @@ class SaturnGameView @JvmOverloads constructor(
 
         DifficultyManager.apply("SATURN", player, this)
         entityManager.setBackground(context, R.drawable.bgr_saturn, screenW, screenH)
+
+        // Set bitmap cho enemy và boss
+        entityManager.setEnemyBitmap(context, R.drawable.enemy11)
+        entityManager.setBossBitmap(context, R.drawable.boss_saturn)
     }
 }

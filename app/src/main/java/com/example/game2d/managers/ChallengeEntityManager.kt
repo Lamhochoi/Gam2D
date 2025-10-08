@@ -22,8 +22,8 @@ class ChallengeEntityManager(private val challengeGameView: ChallengeGameView) :
     private var mercuryBulletBitmap: Bitmap? = null
     private var saturnBulletBitmap: Bitmap? = null
 
-    override fun initResources(screenW: Int, screenH: Int) {
-        super.initResources(screenW, screenH)
+    override fun initResources(context: Context,screenW: Int, screenH: Int) {
+        super.initResources(context, screenW, screenH)
         val res = challengeGameView.resources
         marsEnemyBitmap = BitmapFactory.decodeResource(res, R.drawable.enemyred)
         mercuryEnemyBitmap = BitmapFactory.decodeResource(res, R.drawable.enemy10)

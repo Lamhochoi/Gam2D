@@ -170,7 +170,7 @@ open class GameView @JvmOverloads constructor(
                 } else {
                     Log.d("GameView", "MusicManager đã khởi tạo")
                 }
-                entityManager.initResources(screenW, screenH)
+                entityManager.initResources(context,screenW, screenH)
                 DifficultyManager.apply("MARS", this@GameView)
             }
 

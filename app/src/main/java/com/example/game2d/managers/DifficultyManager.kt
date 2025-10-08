@@ -25,19 +25,19 @@ object DifficultyManager {
 
         when (level) {
             "MARS" -> {
-                player.hp = 50; player.maxHp = 50
+                player.hp = 20; player.maxHp = 20
                 EnemyDefaults.speed = 1; EnemyDefaults.shotDelay = 1500; EnemyDefaults.hp = 2
                 BossDefaults.hp = 20; BossDefaults.speed = 1; BossDefaults.shotDelay = 1500
                 entityManager.goal = 10
             }
             "MERCURY" -> {
-                player.hp = 30; player.maxHp = 30
+                player.hp = 20; player.maxHp = 20
                 EnemyDefaults.speed = 4; EnemyDefaults.shotDelay = 700; EnemyDefaults.hp = 2
                 BossDefaults.hp = 25; BossDefaults.speed = 3; BossDefaults.shotDelay = 1200
                 entityManager.goal = 20
             }
             "SATURN" -> {
-                player.hp = 20; player.maxHp = 20
+                player.hp = 10; player.maxHp = 10
                 EnemyDefaults.speed = 5; EnemyDefaults.shotDelay = 500; EnemyDefaults.hp = 2
                 BossDefaults.hp = 30; BossDefaults.speed = 4; BossDefaults.shotDelay = 1000
                 entityManager.goal = 25

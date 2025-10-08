@@ -17,5 +17,9 @@ class MercuryGameView @JvmOverloads constructor(
 
         DifficultyManager.apply("MERCURY", player, this)
         entityManager.setBackground(context, R.drawable.bgr_mer, screenW, screenH)
+        // Set bitmap cho enemy và boss
+        entityManager.setEnemyBitmap(context, R.drawable.enemy10)
+        entityManager.setBossBitmap(context, R.drawable.boss_mer)
+        entityManager.setFallingObjectBitmap(context, R.drawable.rock)
     }
 }
