@@ -62,6 +62,13 @@ class MainActivity : AppCompatActivity() {
         val btnAddCoin = findViewById<ImageView>(R.id.btnAddCoin)
         val btnAddGem = findViewById<ImageView>(R.id.btnAddGem)
 
+        // Xử lý nút bảng xếp hạng
+        val btnLeaderboard = findViewById<ImageButton>(R.id.btnLeaderboard)
+        btnLeaderboard.setOnClickListener {
+            val intent = Intent(this, CombinedLeaderboardActivity::class.java)
+            startActivity(intent)
+        }
+
         btnMars.setOnClickListener { tryStartGame("MARS") }
         btnMercury.setOnClickListener { tryStartGame("MERCURY") }
         btnSaturn.setOnClickListener { tryStartGame("SATURN") }

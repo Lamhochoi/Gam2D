@@ -46,6 +46,9 @@
         <!-- Thêm Activity mới -->
         <activity android:name=".ChallengeGameActivity" />
         <activity android:name=".ChallengeLeaderboardActivity" />
+        <activity
+            android:name=".CombinedLeaderboardActivity"
+            android:exported="false" />
 
     </application>
 

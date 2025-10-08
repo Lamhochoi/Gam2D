@@ -5,5 +5,6 @@
     <string name="btn_sound_desc">Sound button</string>
     <string name="btn_pause_desc">Pause button</string>
     <string name="btn_settings_desc">Setting button</string>
+    <string name="leaderboard">leaderboard button</string>
 
 </resources>

@@ -138,6 +138,20 @@
         android:scaleType="fitCenter"
         android:contentDescription="Mở cửa hàng"
         android:elevation="8dp" />
+    <!-- Nút bảng xếp hạng (góc trên bên trái, mới thêm) -->
+    <ImageButton
+        android:id="@+id/btnLeaderboard"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_below="@id/statusBar"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="20dp"
+        android:background="@null"
+        android:scaleType="fitCenter"
+        android:contentDescription="@string/leaderboard"
+        android:src="@drawable/ic_leaderboard"
+        android:elevation="8dp" />
 
     <!-- Tiêu đề Game -->
     <TextView
