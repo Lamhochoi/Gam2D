@@ -2,6 +2,7 @@ package com.example.game2d.graphics
 
 import android.graphics.*
 import com.example.game2d.core.ChallengeGameView
+import com.example.game2d.core.GameView
 
 class ChallengeRenderer(private val challengeGameView: ChallengeGameView) : Renderer(challengeGameView) {
 
@@ -15,19 +16,24 @@ class ChallengeRenderer(private val challengeGameView: ChallengeGameView) : Rend
 
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
-        // Xóa dòng drawGameTime(canvas) ở đây để tránh gọi riêng, vì super.draw đã gọi phiên bản override
     }
 
-    override fun drawGameTime(canvas: Canvas) {  // Override để thay thế phiên bản của Renderer
-        val timeMs = challengeGameView.getTotalGameTime()  // Sử dụng tổng thời gian
+    override fun drawGameTime(canvas: Canvas) {
+        val timeMs = challengeGameView.getGameTime()
         val minutes = timeMs / 60000
         val seconds = (timeMs % 60000) / 1000
         val milliseconds = timeMs % 1000
-        val text = "Tổng thời gian: %02d:%02d.%03d".format(minutes, seconds, milliseconds)  // Giữ nguyên text tổng thời gian
+
+        val text = if (challengeGameView.currentLevelIndex == challengeGameView.levels.size - 1 &&
+            challengeGameView.gameState == GameView.GameState.WIN) {
+            "Tổng thời gian: %02d:%02d.%03d".format(minutes, seconds, milliseconds)
+        } else {
+            "Thời gian: %02d:%02d.%03d".format(minutes, seconds, milliseconds)
+        }
 
         val padding = 20f
         val x = 40f
-        val y = 390f  // Giữ vị trí, nhưng giờ chỉ vẽ một cái
+        val y = 390f
 
         timePaint.apply {
             color = Color.CYAN

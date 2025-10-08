@@ -108,13 +108,11 @@ class ChallengeGameActivity : AppCompatActivity() {
 
         btnPause.setOnClickListener {
             if (gameView.gameState == GameView.GameState.RUNNING) {
-                gameView.pause()
-                gameView.gameState = GameView.GameState.PAUSED
+                gameView.pause()  // Gọi pause() để trigger setter PAUSED (không set state thủ công)
                 btnPause.setImageResource(R.drawable.ic_play)
                 Log.d("ChallengeGameActivity", "Game paused")
             } else if (gameView.gameState == GameView.GameState.PAUSED) {
-                gameView.resume()
-                gameView.gameState = GameView.GameState.RUNNING
+                gameView.resume()  // Gọi resume() để trigger setter RUNNING
                 btnPause.setImageResource(R.drawable.ic_pause)
                 Log.d("ChallengeGameActivity", "Game resumed")
             }
@@ -131,7 +129,9 @@ class ChallengeGameActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        gameView.pause()
+        if (gameView.gameState == GameView.GameState.RUNNING) {  // Chỉ pause nếu đang RUNNING, tránh duplicate
+            gameView.pause()
+        }
         MusicManager.pause()
         if (!progressSaved && gameView.player.coins > 0) {
             saveProgress()

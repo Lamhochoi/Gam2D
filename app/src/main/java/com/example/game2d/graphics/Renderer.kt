@@ -52,13 +52,43 @@ open class Renderer(private val gameView: GameView) {
         drawPowerUps(canvas)
         drawGameTime(canvas)
     }
-
-    private fun drawPowerUps(canvas: Canvas) {
+    private fun drawEnemies(canvas: Canvas) {
         val manager = gameView.entityManager
-        manager.activePowerUps.forEach { pu ->
-            pu.bitmap?.let { canvas.drawBitmap(it, pu.x, pu.y, null) }
+        val enemiesCopy = manager.activeEnemies.toList()
+        enemiesCopy.forEach { e ->
+            if (e.active) { // chỉ vẽ enemy còn sống
+                e.bitmap?.let { canvas.drawBitmap(it, e.x, e.y, null) }
+                val barHeight = 10f
+                val hpWidth = e.size * (e.hp.toFloat() / e.maxHp)
+                rectReusable.set(e.x, e.y - barHeight, e.x + hpWidth, e.y)
+                canvas.drawRect(rectReusable, enemyHpPaint)
+            }
         }
     }
+
+    private fun drawBullets(canvas: Canvas) {
+        val manager = gameView.entityManager
+        manager.activeBullets.toList().forEach { b ->
+            if (b.active) b.bitmap?.let { canvas.drawBitmap(it, b.x, b.y, null) }
+        }
+        manager.activeEnemyBullets.toList().forEach { b ->
+            if (b.active) b.bitmap?.let { canvas.drawBitmap(it, b.x, b.y, null) }
+        }
+    }
+    private fun drawPowerUps(canvas: Canvas) {
+        val manager = gameView.entityManager
+        manager.activePowerUps.toList().forEach { pu ->
+            if (pu.active) pu.bitmap?.let { canvas.drawBitmap(it, pu.x, pu.y, null) }
+        }
+    }
+
+    private fun drawFallingObjects(canvas: Canvas) {
+        val manager = gameView.entityManager
+        manager.activeFallingObjects.toList().forEach { f ->
+            if (f.active) f.bitmap?.let { canvas.drawBitmap(it, f.x, f.y, null) }
+        }
+    }
+
 
     private fun drawCoins(canvas: Canvas) {
         val manager = gameView.entityManager
@@ -107,29 +137,7 @@ open class Renderer(private val gameView: GameView) {
         }
     }
 
-    private fun drawEnemies(canvas: Canvas) {
-        val manager = gameView.entityManager
-        manager.activeEnemies.forEach { e ->
-            e.bitmap?.let { canvas.drawBitmap(it, e.x, e.y, null) }
-            val barHeight = 10f
-            val hpWidth = e.size * (e.hp.toFloat() / e.maxHp)
-            rectReusable.set(e.x, e.y - barHeight, e.x + hpWidth, e.y)
-            canvas.drawRect(rectReusable, enemyHpPaint)
-        }
-    }
 
-    private fun drawBullets(canvas: Canvas) {
-        val manager = gameView.entityManager
-        manager.activeBullets.forEach { b -> b.bitmap?.let { canvas.drawBitmap(it, b.x, b.y, null) } }
-        manager.activeEnemyBullets.forEach { b -> b.bitmap?.let { canvas.drawBitmap(it, b.x, b.y, null) } }
-    }
-
-    private fun drawFallingObjects(canvas: Canvas) {
-        val manager = gameView.entityManager
-        manager.activeFallingObjects.forEach { f: FallingObject ->
-            f.bitmap?.let { canvas.drawBitmap(it, f.x, f.y, null) }
-        }
-    }
 
     private fun drawUI(canvas: Canvas) {
         val marginTop = 20f

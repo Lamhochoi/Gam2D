@@ -16,6 +16,6 @@ class MercuryGameView @JvmOverloads constructor(
         super.surfaceCreated(holder)
 
         DifficultyManager.apply("MERCURY", player, this)
-        entityManager.setBackground(context, R.drawable.bg_mercury, screenW, screenH)
+        entityManager.setBackground(context, R.drawable.bgr_mer, screenW, screenH)
     }
 }

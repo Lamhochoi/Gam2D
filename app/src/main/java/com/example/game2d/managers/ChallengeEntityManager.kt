@@ -94,7 +94,7 @@ class ChallengeEntityManager(private val challengeGameView: ChallengeGameView) :
         super.update(deltaTime)
         if (challengeGameView.gameState == GameView.GameState.RUNNING) {
             val level = challengeGameView.levels[challengeGameView.currentLevelIndex]
-            if (level == "SATURN" && (0..100).random() < 2) {
+            if (level == "SATURN" && (0..100).random() < 5) { // Tăng spawn để feature rõ rệt
                 spawnFallingObject()
             }
         }

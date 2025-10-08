@@ -33,7 +33,7 @@ class GameLoop(
         running = false
         if (this != currentThread()) {
             try {
-                join(100) // đợi tối đa 100ms rồi thoát
+                join(500) // đợi tối đa 100ms rồi thoát
             } catch (_: InterruptedException) { }
         }
     }

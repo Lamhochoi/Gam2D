@@ -16,6 +16,6 @@ class SaturnGameView @JvmOverloads constructor(
         super.surfaceCreated(holder)
 
         DifficultyManager.apply("SATURN", player, this)
-        entityManager.setBackground(context, R.drawable.bg_saturn, screenW, screenH)
+        entityManager.setBackground(context, R.drawable.bgr_saturn, screenW, screenH)
     }
 }

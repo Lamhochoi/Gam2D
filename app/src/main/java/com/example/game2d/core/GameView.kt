@@ -20,21 +20,39 @@ import com.example.game2d.managers.MusicManager
 import com.example.game2d.managers.SoundManager
 import com.example.game2d.managers.DifficultyManager
 import android.widget.TextView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 
 open class GameView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : SurfaceView(context, attrs, defStyleAttr), SurfaceHolder.Callback {
+) : SurfaceView(context, attrs, defStyleAttr), SurfaceHolder.Callback, LifecycleOwner {
+
+    // Thêm Lifecycle để dùng lifecycleScope
+    private val lifecycleRegistry = LifecycleRegistry(this)
+    override val lifecycle: Lifecycle get() = lifecycleRegistry
+
+    init {
+        lifecycleRegistry.currentState = Lifecycle.State.CREATED
+        holder.addCallback(this)
+        MusicManager.init(context) // Khởi tạo MusicManager trong init
+    }
 
     enum class GameState { RUNNING, GAME_OVER, WIN, PAUSED }
 
     var lastHitTime: Long = 0L
     var tvCoin: TextView? = null
-    protected var gameStartTime: Long = 0L // Thời gian bắt đầu trận
-    protected var gameEndTime: Long? = null // Thời gian kết thúc trận
+    protected var gameStartTime: Long = 0L
+    protected var gameEndTime: Long? = null
     protected val sharedPrefs: SharedPreferences = context.getSharedPreferences("leaderboard", Context.MODE_PRIVATE)
-    protected var pausedTime: Long = 0L  // Thời gian chơi đã tích lũy đến lúc pause (ms)
+    protected var pausedTime: Long = 0L
 
     companion object {
         const val SCALE_FACTOR = 2f
@@ -42,22 +60,32 @@ open class GameView @JvmOverloads constructor(
     var onGameEnd: (() -> Unit)? = null
     var onLeaderboard: (() -> Unit)? = null
 
-
     open var gameState = GameState.RUNNING
         set(value) {
+            val previousState = field
             field = value
-            if (value == GameState.GAME_OVER || value == GameState.WIN) {
-                overlayStartTime = System.currentTimeMillis()
-                gameEndTime = System.currentTimeMillis() // Lưu thời gian kết thúc
-                if (value == GameState.WIN) {
-                    // Lưu thời gian chơi khi thắng (mili giây)
-                    val time = getGameTime()
-                    saveGameTime(time)
-                    // Lưu gameEndTime vào SharedPreferences
-                    sharedPrefs.edit().putLong("last_game_end_time", gameEndTime ?: 0L).apply()
-                    Log.d("GameView", "Saved gameEndTime: $gameEndTime")
+            when (value) {
+                GameState.PAUSED -> {
+                    pausedTime = System.currentTimeMillis() - gameStartTime
+                    pause()
                 }
-                onGameEnd?.invoke()
+                GameState.RUNNING -> {
+                    if (previousState == GameState.PAUSED) {
+                        gameStartTime = System.currentTimeMillis() - pausedTime
+                    }
+                }
+                GameState.GAME_OVER, GameState.WIN -> {
+                    overlayStartTime = System.currentTimeMillis()
+                    gameEndTime = System.currentTimeMillis()
+                    if (value == GameState.WIN) {
+                        val time = getGameTime()
+                        saveGameTime(time)
+                        sharedPrefs.edit().putLong("last_game_end_time", gameEndTime ?: 0L).apply()
+                        Log.d("GameView", "Saved gameEndTime: $gameEndTime")
+                    }
+                    onGameEnd?.invoke()
+                }
+                else -> {}
             }
         }
 
@@ -86,76 +114,124 @@ open class GameView @JvmOverloads constructor(
     protected val skullBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.you_lose) }
     protected val trophyBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.congratulations) }
     protected val pauseBitmap by lazy { BitmapFactory.decodeResource(resources, R.drawable.ic_pause_bg) }
-    protected var scaledPause: Bitmap? = null
     protected var scaledSkull: Bitmap? = null
     protected var scaledTrophy: Bitmap? = null
+    protected var scaledPause: Bitmap? = null
 
-    init {
-        holder.addCallback(this)
-        MusicManager.init(context) // Khởi tạo nhạc
+    protected var isResourcesInitialized = false
+    protected var surfaceReady = false
+
+    // Lazy cho bitmaps chung
+    protected val scaledSkullLazy by lazy { scaleBitmap(skullBitmap) }
+    protected val scaledTrophyLazy by lazy { scaleBitmap(trophyBitmap) }
+    protected val scaledPauseLazy by lazy { scaleBitmap(pauseBitmap) }
+
+    private fun scaleBitmap(bitmap: Bitmap): Bitmap {
+        val iconSize = (screenW * 0.5f).toInt()
+        return Bitmap.createScaledBitmap(bitmap, iconSize, iconSize, true)
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
-        screenW = holder.surfaceFrame.width() //Lấy kích thước màn hình
+        Log.d("GameView", "surfaceCreated() bắt đầu")
+        surfaceReady = true
+        screenW = holder.surfaceFrame.width()
         screenH = holder.surfaceFrame.height()
-        entityManager.initResources(screenW, screenH)
-        DifficultyManager.apply("MARS", this)
-        gameLoop = GameLoop(this, holder).apply { startLoop() } // Tạo và chạy vòng lặp game
+        lifecycleRegistry.currentState = Lifecycle.State.STARTED
 
-        // Khôi phục trạng thái nếu gameState là WIN
-        if (gameState == GameState.WIN) {
-            gameEndTime = sharedPrefs.getLong("last_game_end_time", 0L)
-            if (gameEndTime == 0L) {
-                gameEndTime = System.currentTimeMillis()
-            }
-            Log.d("GameView", "Restored gameEndTime: $gameEndTime")
-        } else {
-            gameStartTime = System.currentTimeMillis()
-            gameEndTime = null
+        // Chạy loading bằng coroutine
+        lifecycleScope.launch {
+            initResourcesAndStart()
         }
-
-        val iconSize = (screenW * 0.7f).toInt()
-        scaledSkull = Bitmap.createScaledBitmap(skullBitmap, iconSize, iconSize, true)
-        scaledTrophy = Bitmap.createScaledBitmap(trophyBitmap, iconSize, iconSize, true)
-        scaledPause = Bitmap.createScaledBitmap(pauseBitmap, iconSize, iconSize, true)
-
-        // Tính toán vị trí nút bấm
-        val btnWidth = screenW * 0.5f
-        val btnHeight = 150f
-        val centerX = screenW / 2f
-
-        btnRestartRect = RectF(
-            centerX - btnWidth / 2,
-            screenH / 2f + 100,
-            centerX + btnWidth / 2,
-            screenH / 2f + 100 + btnHeight
-        )
-
-        btnMenuRect = RectF(
-            centerX - btnWidth / 2,
-            screenH / 2f + 300,
-            centerX + btnWidth / 2,
-            screenH / 2f + 300 + btnHeight
-        )
-
-        btnLeaderboardRect = RectF(
-            centerX - btnWidth / 2,
-            screenH / 2f + 500,
-            centerX + btnWidth / 2,
-            screenH / 2f + 500 + btnHeight
-        )
-
-        SoundManager.init(context)
-        MusicManager.start(context)
     }
 
-    override fun surfaceDestroyed(holder: SurfaceHolder) {
-        gameLoop?.stopLoop() //Dừng vòng lặp
-        SoundManager.release() // Giải phóng âm thanh
-        MusicManager.pause() //Tạm dừng nhạc
+    protected open suspend fun initResourcesAndStart() {
+        if (isResourcesInitialized) return
+
+        Log.d("GameView", "Đang load resources chung...")
+
+        try {
+            // Chạy I/O tasks trên Dispatchers.IO
+            withContext(Dispatchers.IO) {
+                // Load bitmaps
+                scaledSkull = scaledSkullLazy
+                scaledTrophy = scaledTrophyLazy
+                scaledPause = scaledPauseLazy
+
+                // Init managers nếu chưa init
+                if (!SoundManager.isInitialized()) {
+                    Log.d("GameView", "Khởi tạo SoundManager...")
+                    SoundManager.init(context)
+                } else {
+                    Log.d("GameView", "SoundManager đã khởi tạo")
+                }
+                if (!MusicManager.isInitialized()) {
+                    Log.d("GameView", "Khởi tạo MusicManager...")
+                    MusicManager.init(context)
+                } else {
+                    Log.d("GameView", "MusicManager đã khởi tạo")
+                }
+                entityManager.initResources(screenW, screenH)
+                DifficultyManager.apply("MARS", this@GameView)
+            }
+
+            // Setup buttons và thời gian trên Main thread
+            withContext(Dispatchers.Main) {
+                val btnWidth = screenW * 0.5f
+                val btnHeight = 150f
+                val centerX = screenW / 2f
+                btnRestartRect = RectF(centerX - btnWidth / 2, screenH / 2f + 100, centerX + btnWidth / 2, screenH / 2f + 100 + btnHeight)
+                btnMenuRect = RectF(centerX - btnWidth / 2, screenH / 2f + 300, centerX + btnWidth / 2, screenH / 2f + 300 + btnHeight)
+                btnLeaderboardRect = RectF(centerX - btnWidth / 2, screenH / 2f + 500, centerX + btnWidth / 2, screenH / 2f + 500 + btnHeight)
+
+                if (gameState == GameState.WIN) {
+                    gameEndTime = sharedPrefs.getLong("last_game_end_time", 0L)
+                    if (gameEndTime == 0L) gameEndTime = System.currentTimeMillis()
+                } else {
+                    gameStartTime = System.currentTimeMillis()
+                    gameEndTime = null
+                }
+
+                loadAdditionalResources()
+            }
+
+            isResourcesInitialized = true
+            Log.d("GameView", "Load resources chung hoàn tất")
+
+            // Start game loop và music
+            withContext(Dispatchers.Main) {
+                if (surfaceReady && isResourcesInitialized) {
+                    gameLoop = GameLoop(this@GameView, holder).apply { startLoop() }
+                    if (MusicManager.isMusicEnabled()) {
+                        MusicManager.start(context)
+                        Log.d("GameView", "MusicManager started")
+                    }
+                    SoundManager.playShoot() // Test sound
+                    Log.d("GameView", "Test playShoot")
+                } else {
+                    delay(100)
+                    initResourcesAndStart()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("GameView", "Lỗi load resources", e)
+            isResourcesInitialized = false
+        }
+    }
+
+    protected open suspend fun loadAdditionalResources() {
+        // Không làm gì ở base
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
+
+    override fun surfaceDestroyed(holder: SurfaceHolder) {
+        surfaceReady = false
+        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
+        gameLoop?.stopLoop()
+        gameLoop = null
+        SoundManager.release()
+        MusicManager.pause()
+    }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         return when (gameState) {
@@ -178,7 +254,6 @@ open class GameView @JvmOverloads constructor(
                     btnRestartRect?.let {
                         if (it.contains(event.x, event.y)) {
                             gameState = GameState.RUNNING
-                            resume()
                         }
                     }
                     btnMenuRect?.let {
@@ -191,17 +266,16 @@ open class GameView @JvmOverloads constructor(
         }
     }
 
-    fun update(deltaTime: Float) {
+    open fun update(deltaTime: Float) {
         if (gameState == GameState.RUNNING) {
             entityManager.update(deltaTime)
-            collisionManager.checkCollisions() //Kiểm tra va chạm
+            collisionManager.checkCollisions()
             if (player.isInvincible && System.currentTimeMillis() >= player.invincibilityEndTime) {
-                player.isInvincible = false //Kết thúc bất tử
+                player.isInvincible = false
             }
         }
     }
 
-    //Xử lý rung thiết bị
     fun vibrate(duration: Long = 100) {
         val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         if (vibrator.hasVibrator()) {
@@ -234,36 +308,44 @@ open class GameView @JvmOverloads constructor(
     }
 
     open fun getGameTime(): Long {
-        return if (gameState == GameState.WIN || gameState == GameState.GAME_OVER) {
-            gameEndTime?.minus(gameStartTime) ?: 0L // Trả về thời gian cố định khi trận kết thúc
-        } else {
-            System.currentTimeMillis() - gameStartTime // Cập nhật thời gian khi đang chơi
+        return when (gameState) {
+            GameState.PAUSED -> pausedTime
+            GameState.WIN, GameState.GAME_OVER -> gameEndTime?.minus(gameStartTime) ?: 0L
+            else -> System.currentTimeMillis() - gameStartTime
         }
     }
 
-    //Lưu thời gian
     open fun saveGameTime(time: Long) {
         val editor = sharedPrefs.edit()
-        val topTimes = sharedPrefs.getString("top_times", "")?.split(",")?.mapNotNull { it.toLongOrNull() }?.toMutableList() ?: mutableListOf()
+        val topTimesStr = sharedPrefs.getString("top_times", "") ?: ""
+        val topTimes = topTimesStr.split(",").mapNotNull { it.toLongOrNull() }.toMutableList()
         topTimes.add(time)
         topTimes.sort()
-        if (topTimes.size > 10) topTimes.removeAt(topTimes.size - 1) // Giới hạn top 10
-        editor.putString("top_times", topTimes.joinToString(","))
-        editor.apply()
-        Log.d("GameView", "Saved time: $time ms, topTimes: $topTimes")
+        if (topTimes.size > 10) topTimes.removeAt(topTimes.size - 1)
+        editor.putString("top_times", topTimes.joinToString(",")).apply()
     }
 
     open fun getTopTimes(): List<Long> {
-        return sharedPrefs.getString("top_times", "")?.split(",")?.mapNotNull { it.toLongOrNull() } ?: emptyList()
+        val topTimesStr = sharedPrefs.getString("top_times", "") ?: ""
+        return topTimesStr.split(",").mapNotNull { it.toLongOrNull() }.sorted()
     }
+
     open fun onLeaderboard() {
         // Override in subclasses
     }
 
-    //Vẽ game
     fun render(canvas: Canvas) {
-        Log.v("GameView", "render(): state=$gameState")
-        renderer.draw(canvas) // Vẽ chính
+        if (!isResourcesInitialized || !surfaceReady) {
+            val paint = Paint().apply {
+                color = Color.WHITE
+                textSize = 50f
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawColor(Color.BLACK)
+            canvas.drawText("Loading...", screenW / 2f, screenH / 2f, paint)
+            return
+        }
+        renderer.draw(canvas)
         if (System.currentTimeMillis() - lastHitTime < 150) {
             val flashPaint = Paint().apply { color = Color.argb(80, 255, 0, 0) }
             canvas.drawRect(0f, 0f, screenW.toFloat(), screenH.toFloat(), flashPaint)
@@ -280,13 +362,11 @@ open class GameView @JvmOverloads constructor(
         val elapsed = (System.currentTimeMillis() - overlayStartTime) / 1000f
         val customFont = ResourcesCompat.getFont(context, R.font.robotomono_bold)
 
-        //Vẽ nền đen mờ
         canvas.drawRect(
             0f, 0f, screenW.toFloat(), screenH.toFloat(),
             Paint().apply { color = Color.argb(180, 0, 0, 0) }
         )
 
-        //Vẽ banner
         val bannerWidth = screenW * 0.8f
         val bannerRect = RectF(
             screenW / 2f - bannerWidth / 2,
@@ -341,7 +421,6 @@ open class GameView @JvmOverloads constructor(
             else -> {}
         }
 
-        // Vẽ tiêu đề với hiệu ứng scale (phóng to thu nhỏ)
         val scale = 1f + 0.05f * kotlin.math.sin(elapsed * 2)
         val titlePaint = Paint().apply {
             color = Color.WHITE
@@ -353,14 +432,13 @@ open class GameView @JvmOverloads constructor(
         canvas.drawText(title, bannerRect.centerX(), bannerRect.centerY() + 40f, titlePaint)
 
         if (gameState == GameState.WIN) {
-            // Vẽ nền cho bảng xếp hạng
             val leaderboardWidth = screenW * 0.7f
             val leaderboardHeight = 320f
             val leaderboardRect = RectF(
                 screenW / 2f - leaderboardWidth / 2,
-                screenH / 2f + 750, // Ngay dưới nút "Bảng xếp hạng" (500 + 150)
+                screenH / 2f + 750,
                 screenW / 2f + leaderboardWidth / 2,
-                screenH / 2f + 800 + leaderboardHeight
+                screenH / 2f + 750 + leaderboardHeight
             )
             val leaderboardBgPaint = Paint().apply {
                 shader = LinearGradient(
@@ -379,19 +457,17 @@ open class GameView @JvmOverloads constructor(
             canvas.drawRoundRect(leaderboardRect, 30f, 30f, leaderboardBgPaint)
             canvas.drawRoundRect(leaderboardRect, 30f, 30f, leaderboardBorderPaint)
 
-            // Vẽ tiêu đề bảng xếp hạng
             val leaderboardTitlePaint = Paint().apply {
                 color = Color.WHITE
-                textSize = screenW * 0.04f * (1f + 0.04f * kotlin.math.sin(elapsed * 3)) // Hiệu ứng phóng to
+                textSize = screenW * 0.04f * (1f + 0.04f * kotlin.math.sin(elapsed * 3))
                 textAlign = Paint.Align.CENTER
                 typeface = customFont
                 setShadowLayer(15f, 0f, 0f, Color.YELLOW)
             }
             canvas.drawText("Bảng Xếp Hạng", leaderboardRect.centerX(), leaderboardRect.top + 60f, leaderboardTitlePaint)
 
-            // Vẽ top 1, 2, 3 và thời gian hiện tại
             val topTimes = getTopTimes()
-            Log.d("GameView", "Top times in drawOverlay: $topTimes") // Debug
+            Log.d("GameView", "Top times in drawOverlay: $topTimes")
             topTimes.take(3).forEachIndexed { index, time ->
                 val rank = index + 1
                 val minutes = time / 60000
@@ -400,9 +476,9 @@ open class GameView @JvmOverloads constructor(
                 val text = "Top $rank: %02d:%02d.%03d".format(minutes, seconds, milliseconds)
                 val leaderboardPaint = Paint().apply {
                     color = when (rank) {
-                        1 -> Color.rgb(255, 215, 0) // Vàng cho Top 1
-                        2 -> Color.rgb(192, 192, 192) // Bạc cho Top 2
-                        else -> Color.rgb(205, 127, 50) // Đồng cho Top 3
+                        1 -> Color.rgb(255, 215, 0)
+                        2 -> Color.rgb(192, 192, 192)
+                        else -> Color.rgb(205, 127, 50)
                     }
                     textSize = screenW * 0.035f
                     textAlign = Paint.Align.CENTER
@@ -414,7 +490,7 @@ open class GameView @JvmOverloads constructor(
             if (topTimes.isEmpty()) {
                 val leaderboardPaint = Paint().apply {
                     color = Color.YELLOW
-                    textSize = screenW * 0.005f
+                    textSize = screenW * 0.035f
                     textAlign = Paint.Align.CENTER
                     typeface = customFont
                     setShadowLayer(10f, 0f, 0f, Color.BLACK)
@@ -440,7 +516,6 @@ open class GameView @JvmOverloads constructor(
             )
         }
 
-        // Vẽ nút bấm với hiệu ứng glow (alpha thay đổi)
         val glowAlpha = (128 + 127 * kotlin.math.sin(elapsed * 4)).toInt()
         val buttonBorder = Paint().apply {
             color = Color.argb(glowAlpha, 0, 255, 255)
@@ -482,8 +557,10 @@ open class GameView @JvmOverloads constructor(
     }
 
     open fun pause() {
-        gameLoop?.stopLoop()
-        MusicManager.pause()
+        if (gameLoop?.isRunning == true) {
+            gameLoop?.stopLoop()
+            MusicManager.pause()
+        }
     }
 
     open fun resume() {

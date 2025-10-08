@@ -27,6 +27,8 @@ object MusicManager {
         }
     }
 
+    fun isInitialized(): Boolean = initialized
+
     fun setMusicEnabled(enabled: Boolean) {
         musicEnabled = enabled
     }

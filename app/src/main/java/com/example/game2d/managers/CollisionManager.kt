@@ -22,7 +22,9 @@ open class CollisionManager(private val gameView: GameView) {
         val entityManager = gameView.entityManager
 
         // Coin → Player
-        entityManager.activeCoins.forEach { coin ->
+        val coinIterator = entityManager.activeCoins.iterator()
+        while (coinIterator.hasNext()) {
+            val coin = coinIterator.next()
             if (coin.active) {
                 playerRect.set(
                     gameView.player.x, gameView.player.y,
@@ -32,13 +34,11 @@ open class CollisionManager(private val gameView: GameView) {
                 val coinRect = RectF(coin.x, coin.y, coin.x + coin.size, coin.y + coin.size)
 
                 if (RectF.intersects(playerRect, coinRect)) {
-                    coin.active = false
+                    coinIterator.remove() // ✅ remove ngay bằng iterator
                     gameView.player.coins += coin.value
-                    // ✅ Chỉ cập nhật coin tạm thời và UI
                     gameView.tvCoin?.post {
                         gameView.tvCoin?.text = gameView.player.coins.toString()
                     }
-                    //SoundManager.playCoin()
                 }
             }
         }
@@ -60,36 +60,32 @@ open class CollisionManager(private val gameView: GameView) {
                     if (e.hp <= 0 && e.active) {
                         e.active = false
                         if (e.isBoss) {
-                            // Boss chết → WIN
                             entityManager.spawnExplosion(e.x + e.size / 2f, e.y + e.size / 2f, e.size)
                             if (gameView.gameState == GameView.GameState.RUNNING) {
                                 gameView.gameState = GameView.GameState.WIN
                             }
                         } else {
-                            // Enemy thường chết
                             entityManager.increaseEnemiesKilled()
                             entityManager.spawnExplosion(e.x + e.size / 2f, e.y + e.size / 2f, e.size)
-
-                            // ✅ Spawn Coin tại đây
                             entityManager.spawnCoin(
                                 e.x + e.size / 2f - entityManager.coinSize / 2f,
                                 e.y + e.size / 2f - entityManager.coinSize / 2f
                             )
                         }
-                        enemyIterator.remove() // ✅ xoá ngay enemy chết
+                        enemyIterator.remove() // ✅ remove an toàn
                     }
                     hit = true
                 }
             }
-
             if (hit) {
-                b.active = false
-                bulletIterator.remove() // xoá bullet đã va chạm
+                bulletIterator.remove() // ✅ remove bullet
             }
         }
 
         // Enemy bullet → Player
-        entityManager.activeEnemyBullets.removeAll { b ->
+        val enemyBulletIterator = entityManager.activeEnemyBullets.iterator()
+        while (enemyBulletIterator.hasNext()) {
+            val b = enemyBulletIterator.next()
             playerRect.set(
                 gameView.player.x, gameView.player.y,
                 gameView.player.x + gameView.player.size,
@@ -101,48 +97,48 @@ open class CollisionManager(private val gameView: GameView) {
                 if (!gameView.player.isInvincible) {
                     gameView.onPlayerHit(1)
                 }
-                b.active = false
-                true
-            } else false
+                enemyBulletIterator.remove()
+            }
         }
 
         // FallingObject → Player
-        entityManager.activeFallingObjects.forEach { f: FallingObject ->
-            if (f.active) {
-                playerRect.set(
-                    gameView.player.x, gameView.player.y,
-                    gameView.player.x + gameView.player.size,
-                    gameView.player.y + gameView.player.size
-                )
-                fallingRect.set(f.x, f.y, f.x + f.size, f.y + f.size)
+        val fallIterator = entityManager.activeFallingObjects.iterator()
+        while (fallIterator.hasNext()) {
+            val f = fallIterator.next()
+            playerRect.set(
+                gameView.player.x, gameView.player.y,
+                gameView.player.x + gameView.player.size,
+                gameView.player.y + gameView.player.size
+            )
+            fallingRect.set(f.x, f.y, f.x + f.size, f.y + f.size)
 
-                if (RectF.intersects(playerRect, fallingRect)) {
-                    if (!gameView.player.isInvincible) {
-                        gameView.onPlayerHit(1)
-                    }
-                    f.active = false
+            if (RectF.intersects(playerRect, fallingRect)) {
+                if (!gameView.player.isInvincible) {
+                    gameView.onPlayerHit(1)
                 }
+                fallIterator.remove()
             }
         }
 
         // PowerUp → Player
-        entityManager.activePowerUps.forEach { pu: PowerUp ->
-            if (pu.active) {
-                playerRect.set(
-                    gameView.player.x, gameView.player.y,
-                    gameView.player.x + gameView.player.size,
-                    gameView.player.y + gameView.player.size
-                )
-                powerUpRect.set(pu.x, pu.y, pu.x + pu.size, pu.y + pu.size)
+        val powerUpIterator = entityManager.activePowerUps.iterator()
+        while (powerUpIterator.hasNext()) {
+            val pu = powerUpIterator.next()
+            playerRect.set(
+                gameView.player.x, gameView.player.y,
+                gameView.player.x + gameView.player.size,
+                gameView.player.y + gameView.player.size
+            )
+            powerUpRect.set(pu.x, pu.y, pu.x + pu.size, pu.y + pu.size)
 
-                if (RectF.intersects(playerRect, powerUpRect)) {
-                    pu.active = false
-                    applyPowerUpEffect(pu.type)
-                    //SoundManager.playPowerUp()  // Giả sử bạn thêm hàm này vào SoundManager
-                }
+            if (RectF.intersects(playerRect, powerUpRect)) {
+                powerUpIterator.remove()
+                applyPowerUpEffect(pu.type)
             }
         }
     }
+
+
     private fun applyPowerUpEffect(type: PowerUpType) {
         val player = gameView.player
         when (type) {
